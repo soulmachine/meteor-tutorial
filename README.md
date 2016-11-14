@@ -5,7 +5,7 @@ Meteor 入门教程。
 Table of Contents
 -----------------
 1. [Step1: 新建一个工程](#step1-新建一个工程)
-1. [Step2: 添加React支持](#step2-添加React支持)
+1. [Step2: 添加React支持](#step2-添加react支持)
 
 
 # Step1: 新建一个工程
