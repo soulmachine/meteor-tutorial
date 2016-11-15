@@ -6,6 +6,7 @@ Table of Contents
 -----------------
 1. [Step1: 新建一个工程](#step1-新建一个工程)
 1. [Step2: 添加React支持](#step2-添加react支持)
+1. [Step3: simple-todos-react](#step3-simple-todos-react)
 
 
 # Step1: 新建一个工程
@@ -63,4 +64,9 @@ Table of Contents
 1. 浏览到 `Language & Frameworks->JavaScript->Libraries`，在右边的窗口中，勾选`ECMAScript 6`
 1. 浏览到 `Language & Frameworks->JavaScript->Code Quality Tools->ESLint`，在右边的窗口中勾选`Enable`
 1. 浏览到 `Language & Frameworks->Node.jsJ and NPM`，在右边的窗口中找到 `Node.js Core library`，点击 `Enable`按钮
+
+
+# Step3: simple-todos-react
+
+按照官方的 tutorial, <https://www.meteor.com/tutorials> , 完成 React 版的 simple-todos.
 
