@@ -11,7 +11,7 @@ Table of Contents
 
 # Step1: 新建一个工程
 
-现在 github 网页上新建一个 private 项目 `princessmap`，然后 clone 到本地
+现在 github 网页上新建一个 private 项目 `meteor-tutorial`，然后 clone 到本地
 
     git@github.com:soulmachine/meteor-tutorial.git
     mv meteor-tutorial tmp-meteor-tutorial
@@ -108,35 +108,29 @@ FlowRouter.route('/lists/:_id', {
 ```jsx
 import React from 'react';
 
-import Nav from './Nav';
+import Header from './Header';
 import Footer from './Footer';
 
 
 function MainLayout(props) {
-    return (
-      <div>
-        <header>
-          <Nav />
-        </header>
-        <main>
-          {props.content}
-        </main>
-        <footer>
-          <Footer />
-        </footer>
-      </div>
-    );
+	return (
+    <div>
+      <Header />
+      {props.content}
+      <Footer />
+    </div>
+  );
 }
 
 export default MainLayout;
 ```
 
-`imports/ui/layouts/Nav.jsx`,
+`imports/ui/layouts/Header.jsx`,
 
 ```jsx
 import React from 'react';
 
-function Nav() {
+function Header() {
   return (
     <div>
       <a href="/">Home</a> { " " } <a href="/todo">Todo</a>
@@ -144,7 +138,7 @@ function Nav() {
   );
 }
 
-export default Nav;
+export default Header;
 ```
 
 `imports/ui/layouts/Footer.jsx`,

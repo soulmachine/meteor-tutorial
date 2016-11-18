@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Nav() {
+function Header() {
   return (
     <div>
       <a href="/">Home</a> { " " } <a href="/todo">Todo</a>
@@ -8,4 +8,4 @@ function Nav() {
   );
 }
 
-export default Nav;
+export default Header;
