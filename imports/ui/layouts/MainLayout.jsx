@@ -6,12 +6,18 @@ import Footer from './Footer';
 
 function MainLayout(props) {
 	return (
-    <div>
-      <Header />
-      {props.content}
-      <Footer />
-    </div>
-  );
+      <div>
+        <header>
+          <Header />
+        </header>
+        <main>
+          {props.content}
+        </main>
+        <footer>
+          <Footer />
+        </footer>
+      </div>
+    );
 }
 
 export default MainLayout;
