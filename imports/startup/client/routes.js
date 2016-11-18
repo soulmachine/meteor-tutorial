@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'react-mounter';
 
 import MainLayout from '../../ui/layouts/MainLayout';
-import NotFound from '../../ui/layouts/NotFound';
+import NotFound from '../../ui/components/NotFound';
 
 import Welcome from '../../ui/components/Welcome';
 import Todo from '../../ui/components/Todo';
@@ -11,23 +11,25 @@ import Todo from '../../ui/components/Todo';
 FlowRouter.route("/", {
   action() {
     mount(MainLayout, {
-      content: (<Welcome name="soulmachine"/>)
+      children: (<Welcome name="soulmachine"/>)
     });
-  }
+  },
+  name: 'home'
 });
 
 FlowRouter.route("/todo", {
   action() {
     mount(MainLayout, {
-        content: (<Todo />)
+      children: (<Todo />)
     });
-  }
+  },
+  name: 'todo'
 });
 
 FlowRouter.notFound = {
   action () {
     mount(MainLayout, {
-      content: (<NotFound />)
+      children: (<NotFound />)
     });
   }
 };

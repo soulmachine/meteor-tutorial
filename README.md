@@ -8,6 +8,8 @@ Table of Contents
 1. [Step2: 添加React支持](#step2-添加react支持)
 1. [Step3: simple-todos-react](#step3-simple-todos-react)
 1. [Step4: Flow Router](#step4-flow-router)
+1. [Step5: 设计布局](#step5-设计布局)
+
 
 # Step1: 新建一个工程
 
@@ -48,7 +50,7 @@ Table of Contents
 
 安装一些必备的包，
 
-    meteor npm install --save classnames
+    meteor npm install --save classnames indexof
 
 `git status` 总共有4个文件发生了变化，
 
@@ -101,7 +103,7 @@ FlowRouter.route('/lists/:_id', {
 
     npm install --save react-mounter
 
-创建四个跟布局相关的组件，
+创建三个跟布局相关的组件，
 
 `imports/ui/layouts/MainLayout.jsx`,
 
@@ -119,7 +121,7 @@ function MainLayout(props) {
           <Header />
         </header>
         <main>
-          {props.content}
+          {props.children}
         </main>
         <footer>
           <Footer />
@@ -163,21 +165,26 @@ function Footer() {
 export default Footer;
 ```
 
-`imports/ui/layouts/NotFound.jsx`,
+创建一个 404 找不到时候的页面，`imports/ui/components/NotFound.jsx`, 内容跟 <https://github.com/ant-design/ant-design/blob/master/site/theme/template/NotFound.jsx> 一模一样，
 
 ```jsx
 import React from 'react';
 
-function NotFound() {
-    return (
-    <div >
-      <h1>Oops! Nothing here.</h1>
-      <a href="/">Go home</a>
+export default function NotFound() {
+  return (
+    <div id="page-404">
+      <section>
+        <h1>404</h1>
+        <p>你要找的页面不存在 <a href="/">返回首页</a></p>
+      </section>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: '#react-content { height: 100%; background-color: #fff }',
+        }}
+      />
     </div>
   );
 }
-
-export default NotFound;
 ```
 
 将 `imports/ui/App.jsx` 重命名为 `Todo.jsx` 并移动到 `imports/ui/components`, 打开该文件，将 `App` 组件重命名为`Todo`。将 `imports/ui/AccountsUIWrapper.jsx` 和 `imports/ui/Task.jsx` 移动到 `imports/ui/components`.
@@ -195,7 +202,7 @@ import React from 'react';
 import {mount} from 'react-mounter';
 
 import MainLayout from '../../ui/layouts/MainLayout';
-import NotFound from '../../ui/layouts/NotFound';
+import NotFound from '../../ui/components/NotFound';
 
 import Welcome from '../../ui/components/Welcome';
 import Todo from '../../ui/components/Todo';
@@ -204,23 +211,25 @@ import Todo from '../../ui/components/Todo';
 FlowRouter.route("/", {
   action() {
     mount(MainLayout, {
-      content: (<Welcome name="soulmachine"/>)
+      children: (<Welcome name="soulmachine"/>)
     });
-  }
+  },
+  name: 'home'
 });
 
 FlowRouter.route("/todo", {
   action() {
     mount(MainLayout, {
-        content: (<Todo />)
+      children: (<Todo />)
     });
-  }
+  },
+  name: 'todo'
 });
 
 FlowRouter.notFound = {
   action () {
     mount(MainLayout, {
-      content: (<NotFound />)
+      children: (<NotFound />)
     });
   }
 };
@@ -235,3 +244,19 @@ import '../imports/startup/client/routes.js';
 
 将 `client/main.html` 中的DOM根节点ID 改为 `react-root`, 因为 `react-mounter`默认会将渲染出来的组件挂载到 ID 为 `react-root` 的DOM根节点下。
 
+
+# Step5: 设计布局
+
+当前的页面太丑了，这一节我们设计布局，做一点美化工作。
+
+将 <https://github.com/ant-design/ant-design/tree/master/site/theme/template/Layout> 下面的三个文件拷贝到 `imports/ui/layout`，进行一些修改，代码这里就不贴了。这一步工作量比较大。
+
+关于样式，将 <https://github.com/ant-design/ant-design/tree/master/site/theme/static> 拷贝到 `imports/ui/static`，可以酌情删除一些不必要的样式文件，，删除 `client/main.css`，并在 `imports/ui/layout/index.jsx` 中引入所有 css 样式，
+
+    import '../../ui/static/style';
+
+由于这些文件是 LESS 文件，我们需要添加 LESS 支持，
+
+    meteor add less
+
+在 `Header.jsx` 怎么知道该高亮顶部导航栏中的哪个菜单呢？一般的做法是获取当前URL，从URL抽取出对应的`Menu.Item`的key, 知道了是哪个key, 就可以高亮显示那个菜单了。不过这里我偷了个懒，在配置路由时，设置 `name` 跟 `Header.jsx` 中的`Menu.Item` 的 key 相同，这样把`FlowRouter.getRouteName()`当做要高亮的`Menu.Item` 的 key，在 `MainLayout.jsx`把通过props传递给 `Header.jsx`，从而控制高亮显示某个菜单。
