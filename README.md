@@ -376,6 +376,12 @@ FlowRouter.route('/logout', {
 * `git rm imports/ui/components/AccountsUIWrapper.jsx`
 * `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
 
+（可选）为了调试方便，我们可以安装这个包，<https://github.com/msavin/Mongol>, 这个包可以查看客户端数据库 minimongo 里的所有 Collection。
+
+    meteor add msavin:mongol
+
+用浏览器打开 <http://localhost:3000/> 后按组合键 `Ctrl+M`，可以在网页右下键看到一个面板，在这里可以查看数据库里的所有数据，非常方便。由于 Mongol 是一个`debugOnly`的包， 当你编译 release 版的时候Meteor 的编译工具会自动的排除它，相当贴心。
+
 
 # 参考资料：
 
@@ -383,4 +389,5 @@ FlowRouter.route('/logout', {
 * [meteor/todos](https://github.com/meteor/todos)
 * [meteor-boilerplate](https://github.com/surfer77/meteor-boilerplate)
 * [Meteor-reCAPTCHA](https://github.com/Altapp/Meteor-reCAPTCHA)
+* [Extending Meteor.users - Medium](https://medium.com/all-about-meteorjs/extending-meteor-users-300a6cb8e17f)
 
