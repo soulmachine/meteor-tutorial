@@ -269,7 +269,7 @@ import '../imports/startup/client/routes.js';
 
 # Step6: 注册和登录
 
-`accounts-ui`自带简单的界面，在快速开发原型时很有用，不过你会发现它不够用，大多数时候你还是需要自己定制登录和注册界面，我们用[useraccounts:unstyled](https://github.com/meteor-useraccounts/core/blob/master/Guide.md)来代替 `accounts-ui`。官方Guide[这里](https://guide.meteor.com/accounts.html#useraccounts)也推荐用 [useraccounts](https://github.com/meteor-useraccounts/core/blob/master/Guide.md)
+`accounts-ui`自带简单的界面，虽然在快速开发原型时很有用，但是最终你还是需要自己定制登录和注册界面，下面我们开始一步一步制作登录和注册界面。
 
 在注册和登录的时候，都需要一个验证码，我们选择 Google reCAPTCHA, GitHub这里有一个现成的React 组件，[react-recaptcha](https://github.com/appleboy/react-recaptcha)。
 
