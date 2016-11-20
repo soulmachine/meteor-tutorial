@@ -102,6 +102,7 @@ const LoginSignup = React.createClass({
         <Button type="ghost" onClick={this.showLogin}>
           登录
         </Button>
+        {' '}
         <Button type="ghost" onClick={this.showSignup}>
           注册
         </Button>
@@ -115,7 +116,7 @@ const LoginSignup = React.createClass({
           >
             <Login/>
           </Modal>
-          : ''
+          : null
         }
         { this.state.signupVisible ?
           <Modal title="注册" visible={this.state.signupVisible} width={334}
@@ -127,7 +128,7 @@ const LoginSignup = React.createClass({
           >
             <Signup/>
           </Modal>
-          : ''
+          : null
         }
       </div>
     )
