@@ -1,6 +1,10 @@
 # meteor-tutorial
 
-Meteor 入门教程。
+Meteor 入门教程。如何运行？
+
+    meteor npm install
+    meteor --settings settings.json
+
 
 Table of Contents
 -----------------
