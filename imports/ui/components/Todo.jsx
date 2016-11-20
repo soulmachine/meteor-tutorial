@@ -6,8 +6,7 @@ import { createContainer } from 'meteor/react-meteor-data';
 import { Tasks } from '../../api/tasks.js';
  
 import Task from './Task.jsx';
-import AccountsUIWrapper from './AccountsUIWrapper.jsx';
- 
+
 // Todo component
 class Todo extends Component {
   constructor(props) {
@@ -70,8 +69,6 @@ class Todo extends Component {
             />
             Hide Completed Tasks
           </label>
-
-          <AccountsUIWrapper />
 
           { this.props.currentUser ?
             <form className="new-task" onSubmit={this.handleSubmit.bind(this)} >

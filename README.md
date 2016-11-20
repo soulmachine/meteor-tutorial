@@ -9,6 +9,7 @@ Table of Contents
 1. [Step3: simple-todos-react](#step3-simple-todos-react)
 1. [Step4: Flow Router](#step4-flow-router)
 1. [Step5: 设计布局](#step5-设计布局)
+1. [Step6: 注册和登录](#step6-注册和登录)
 
 
 # Step1: 新建一个工程
@@ -260,3 +261,122 @@ import '../imports/startup/client/routes.js';
     meteor add less
 
 在 `Header.jsx` 怎么知道该高亮顶部导航栏中的哪个菜单呢？一般的做法是获取当前URL，从URL抽取出对应的`Menu.Item`的key, 知道了是哪个key, 就可以高亮显示那个菜单了。不过这里我偷了个懒，在配置路由时，设置 `name` 跟 `Header.jsx` 中的`Menu.Item` 的 key 相同，这样把`FlowRouter.getRouteName()`当做要高亮的`Menu.Item` 的 key，在 `MainLayout.jsx`把通过props传递给 `Header.jsx`，从而控制高亮显示某个菜单。
+
+
+# Step6: 注册和登录
+
+`accounts-ui`自带简单的界面，在快速开发原型时很有用，不过你会发现它不够用，大多数时候你还是需要自己定制登录和注册界面，我们用[useraccounts:unstyled](https://github.com/meteor-useraccounts/core/blob/master/Guide.md)来代替 `accounts-ui`。官方Guide[这里](https://guide.meteor.com/accounts.html#useraccounts)也推荐用 [useraccounts](https://github.com/meteor-useraccounts/core/blob/master/Guide.md)
+
+在注册和登录的时候，都需要一个验证码，我们选择 Google reCAPTCHA, GitHub这里有一个现成的React 组件，[react-recaptcha](https://github.com/appleboy/react-recaptcha)。
+
+首先按安装这个包，
+
+    npm install --save react-recaptcha
+
+使用这个包，需要在 `<head>` 头部引入 Google 的这个 JS 文件 <https://www.google.com/recaptcha/api.js>，为了能方便的在头部插入 `<script>`，我们使用这个小工具, [react-helmet](https://github.com/nfl/react-helmet),
+
+    npm install --save react-helmet
+
+然后，我们创建一个验证码组件， `imports/ui/components/RecaptchaItem.jsx`,
+
+```jsx
+import React from 'react';
+import Helmet from "react-helmet";
+import ReactRecaptcha from 'react-recaptcha';
+import { Meteor } from 'meteor/meteor';
+
+const RecaptchaItem = React.createClass({
+  verifyCallback(result) {
+    console.log('verifyCallback', result);
+    this.props.onChange(result); // 认证通过时，通知到 form
+  },
+  render() {
+    return (
+      <div>
+        <Helmet
+          script={[
+            {
+              "src": "https://www.google.com/recaptcha/api.js?hl=zh_CN",
+              "type": "text/javascript",
+              "async": true,
+              "defer": true
+            },
+          ]}
+        />
+        <ReactRecaptcha
+          render="explicit"
+          sitekey={Meteor.settings.public.siteKey}
+          onloadCallback={() => {}}
+          verifyCallback={this.verifyCallback}
+        />
+      </div>
+    );
+  }
+});
+
+export default RecaptchaItem;
+```
+
+要使用验证码，客户端需要知道公钥 sitekey, 服务端需要知道 secretkey, 在 Meteor 程序里我们一般把配置信息存放在根目录下的 `settings.json` 中，然后运行 `meteor --setings settings.json` 来启动这个 Web App. 然后在代码中可以访问这些配置，例如上上面的代码中使用了 `sitekey={Meteor.settings.public.siteKey}` 来获取公钥。注意不要把千万 `settings.json` 文件 commit 到git仓库。
+
+验证码组件写完了，但是还没有结束，需要在服务端来校验验证码，创建一个文件 `imports/api/captcha.js`, 里面只有一个函数`verifyCaptcha()`，具体代码请阅读这个文件。只需要在 `server/main.js`中import 这个文件，因为客户端不需要调用这个函数。
+
+`imports/api/captcha.js` 依赖下面两个包，
+
+    meteor add http ejson
+
+创建登录组件，代码见 `imports/ui/components/Login.jsx`，它是一个表单Form, 里面包含了一些字段。注意，`Meteor.loginWithPassword()`只能在客户端调用，不能用在服务端代码中。
+
+创建注册组件，代码见 `imports/ui/components/Signup.jsx`，它也是一个表单Form。
+
+以上两个组件的代码都借鉴了官方的例子 <https://ant.design/components/form/> ，可以两边对照看，方便理解代码。
+
+接下来我们需要在 Header 的导航栏的中添加两个按钮，注册和登录。点击登录按钮，会弹出一个模态对话框，显示登录表单；点击注册按钮，会弹出一个模态对话框，显示注册表单。代码见`imports/ui/layouts/Header.jsx`。
+
+当用户成功登录后，需要隐藏登录和注册按钮，同时在导航栏添加一个下拉菜单，用户展示`我的主页`，`退出`等菜单，具体代码见 `imports/ui/layouts/Header.jsx`。
+
+有一点需要注意，默认的下拉菜单里的每一项，高度太高了，需要单独给一个样式，在 `Header.less`添加如下一段样式：
+
+```css
+#nav li ul li {
+  height: 40px;
+  line-height: 40px;
+  min-width: 72px;
+  text-align: center;
+  border-bottom-width: 3px;
+
+  &.ant-menu-item-selected a {
+    color: #2db7f5;
+    font-weight: bold;
+  }
+}
+```
+
+关于`退出`按钮，只需要在 `imports/startup/client/routes.js` 添加一个路由规则，即可实现功能，
+
+```jsx
+FlowRouter.route('/logout', {
+  name: 'logout',
+  action() {
+    console.log("logout");
+    Meteor.logout();
+    FlowRouter.redirect('/');
+  }
+});
+```
+
+最后，当新的登录和注册逻辑能走通后，删除 `Todo.jsx` 里的登录按钮，
+
+* 运行 `meteor remove accounts-ui`，卸载 `accounts-ui`，因为我们有了自己的登录和注册界面，不再需要这个包了。注意不要卸载 `accounts-password`，这个包负责底层逻辑，是一个login service, 我们依然需要它。
+* 删除 `Todo.jsx` 里的 `AccountsUIWrapper`
+* `git rm imports/ui/components/AccountsUIWrapper.jsx`
+* `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
+
+
+# 参考资料：
+
+* [meteor-useraccounts/boilerplates/bootstrap-flow-router-react/](https://github.com/meteor-useraccounts/boilerplates/tree/master/bootstrap-flow-router-react)
+* [meteor/todos](https://github.com/meteor/todos)
+* [meteor-boilerplate](https://github.com/surfer77/meteor-boilerplate)
+* [Meteor-reCAPTCHA](https://github.com/Altapp/Meteor-reCAPTCHA)
+

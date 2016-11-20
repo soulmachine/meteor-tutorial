@@ -6,9 +6,11 @@ import '../../ui/static/style';
 function MainLayout({children}) {
   const activeMenu = FlowRouter.getRouteName();
   return (
-    <div className="main-wrapper">
-      <Header activeMenu = {activeMenu} />
-      {children}
+    <div className="page-wrapper">
+      <Header activeMenu={activeMenu}/>
+      <div className="main-wrapper">
+        {children}
+      </div>
       <Footer />
     </div>
   );

@@ -1,4 +1,7 @@
 import React from 'react';
+import { Meteor } from 'meteor/meteor';
+import { createContainer } from 'meteor/react-meteor-data';
+
 import enquire from 'enquire.js';
 
 import Menu from 'antd/lib/menu';
@@ -8,17 +11,17 @@ import Icon from 'antd/lib/icon';
 import Button from 'antd/lib/button';
 import Popover from 'antd/lib/popover';
 import Input from 'antd/lib/input';
-import 'antd/lib/menu/style/css';
-import 'antd/lib/row/style/css';
-import 'antd/lib/col/style/css';
-import 'antd/lib/icon/style/css';
-import 'antd/lib/button/style/css';
-import 'antd/lib/popover/style/css';
-import 'antd/lib/input/style/css';
+import Modal from 'antd/lib/modal';
+
+import 'antd/dist/antd.css';
+
+import Login from '../components/Login';
+import Signup from '../components/Signup';
 
 
 import classNames from 'classnames';
 const InputGroup = Input.Group;
+const SubMenu = Menu.SubMenu;
 
 // See https://github.com/ant-design/ant-design/blob/master/components/input/demo/search-input.md
 const SearchInput = React.createClass({
@@ -69,7 +72,69 @@ const SearchInput = React.createClass({
 });
 
 
-export default class Header extends React.Component {
+const LoginSignup = React.createClass({
+  getInitialState() {
+    return { loginVisible: false, signupVisible: false };
+  },
+  showLogin() {
+    this.setState({
+      loginVisible: true,
+    });
+  },
+  handleLoginCancel() {
+    this.setState({
+      loginVisible: false,
+    });
+  },
+  showSignup() {
+    this.setState({
+      signupVisible: true,
+    });
+  },
+  handleSignupCancel() {
+    this.setState({
+      signupVisible: false,
+    });
+  },
+  render() {
+    return (
+      <div className="lang">
+        <Button type="ghost" onClick={this.showLogin}>
+          登录
+        </Button>
+        <Button type="ghost" onClick={this.showSignup}>
+          注册
+        </Button>
+        { this.state.loginVisible ?
+          <Modal title="登录" visible={this.state.loginVisible} width={334}
+                 onOk={this.handleLoginOK} onCancel={this.handleLoginCancel}
+                 footer={[
+                   null, null,
+                 ]}
+                 maskClosable={false}
+          >
+            <Login/>
+          </Modal>
+          : ''
+        }
+        { this.state.signupVisible ?
+          <Modal title="注册" visible={this.state.signupVisible} width={334}
+                 onOk={this.handleSignupOK} onCancel={this.handleSignupCancel}
+                 footer={[
+                   null, null,
+                 ]}
+                 maskClosable={false}
+          >
+            <Signup/>
+          </Modal>
+          : ''
+        }
+      </div>
+    )
+  },
+});
+
+class Header extends React.Component {
   constructor(props) {
     super(props);
 
@@ -98,21 +163,49 @@ export default class Header extends React.Component {
       'home-nav-white': true,
     });
 
-    const menuMode = this.state.menuMode;
-    const menu = [
-      <Menu mode={menuMode} selectedKeys={[activeMenuItem]} id="nav" key="nav">
-        <Menu.Item key="home">
-          <a href="/">首页</a>
-        </Menu.Item>
-        <Menu.Item key="todo">
-          <a href="/todo">Todo</a>
-        </Menu.Item>
-      </Menu>,
-    ];
+    let menu;
+    if (this.props.currentUser) {
+      menu = [
+        <Menu mode={this.state.menuMode} selectedKeys={[activeMenuItem]} id="nav" key="nav">
+          <Menu.Item key="home">
+            <a href="/">首页</a>
+          </Menu.Item>
+          <Menu.Item key="todo">
+            <a href="/todo">Todo</a>
+          </Menu.Item>
+          <SubMenu title={<span><Icon type="user"/>{this.props.currentUser.username}</span>} id="navsubmenu">
+            <Menu.Item key="user">
+              <a href={'/user/' + this.props.currentUser.username}>我的主页</a>
+            </Menu.Item>
+            <Menu.Item key="inbox">
+              <a href='/inbox'>私信</a>
+            </Menu.Item>
+            <Menu.Item key="settings">
+              <a href='/settings'>设置</a>
+            </Menu.Item>
+            <Menu.Item key="logout">
+              <a href='/logout'>退出</a>
+            </Menu.Item>
+          </SubMenu>
+        </Menu>,
+      ]
+    } else {
+      menu = [
+        <LoginSignup key='loginsignup'/>,
+        <Menu mode={this.state.menuMode} selectedKeys={[activeMenuItem]} id="nav" key="nav">
+          <Menu.Item key="home">
+            <a href="/">首页</a>
+          </Menu.Item>
+          <Menu.Item key="todo">
+            <a href="/todo">Todo</a>
+          </Menu.Item>
+        </Menu>,
+      ]
+    }
 
     return (
       <header id="header" className={headerClassName}>
-        {menuMode === 'inline' ? <Popover
+        {this.state.menuMode === 'inline' ? <Popover
           overlayClassName="popover-menu"
           placement="bottomRight"
           content={menu}
@@ -134,13 +227,23 @@ export default class Header extends React.Component {
           <Col lg={20} md={18} sm={17} xs={0} style={{ display: 'block' }}>
             <div id="search-box">
               <SearchInput placeholder="搜索你感兴趣的内容..."
-                           onSearch={value => console.log(value)} style={{ width: 200 }}
+                           onSearch={value => console.log(value)} style={{ width: 300 }}
               />
             </div>
-            {menuMode === 'horizontal' ? menu : null}
+            {this.state.menuMode === 'horizontal' ? menu : null}
           </Col>
         </Row>
       </header>
     );
   }
 }
+
+Header.propTypes = {
+  currentUser: React.PropTypes.object,
+};
+
+export default createContainer(() => {
+  return {
+    currentUser: Meteor.user(),
+  };
+}, Header);

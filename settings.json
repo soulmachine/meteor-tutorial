@@ -1,0 +1,6 @@
+{
+  "secretKey": "your secretkey",
+  "public": {
+    "siteKey": "your sitekey"
+  }
+}

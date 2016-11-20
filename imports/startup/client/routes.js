@@ -33,3 +33,11 @@ FlowRouter.notFound = {
     });
   }
 };
+FlowRouter.route('/logout', {
+  name: 'logout',
+  action() {
+    console.log("logout");
+    Meteor.logout();
+    FlowRouter.redirect('/');
+  }
+});
