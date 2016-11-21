@@ -1,9 +1,19 @@
 import React from 'react';
+import { createContainer } from 'meteor/react-meteor-data';
 
-function Welcome({name}) {
+function Welcome({currentUser}) {
   return (
-    <div>Hello, {name}</div>
+    <div>Hello, {currentUser ? currentUser.username : 'World'}</div>
   );
 }
 
-export default  Welcome;
+Welcome.propTypes = {
+  currentUser: React.PropTypes.object,
+};
+
+export default createContainer(() => {
+  Meteor.subscribe('tasks');
+  return {
+    currentUser: Meteor.user(),
+  };
+}, Welcome);
