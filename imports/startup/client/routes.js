@@ -11,7 +11,7 @@ import Todo from '../../ui/components/Todo';
 FlowRouter.route("/", {
   action() {
     mount(MainLayout, {
-      children: (<Welcome name="soulmachine"/>)
+      children: (<Welcome />)
     });
   },
   name: 'home'
