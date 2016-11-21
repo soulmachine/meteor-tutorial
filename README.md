@@ -269,6 +269,8 @@ import '../imports/startup/client/routes.js';
 
 # Step6: 注册和登录
 
+## 验证码
+
 `accounts-ui`自带简单的界面，虽然在快速开发原型时很有用，但是最终你还是需要自己定制登录和注册界面，下面我们开始一步一步制作登录和注册界面。
 
 在注册和登录的时候，都需要一个验证码，我们选择 Google reCAPTCHA, GitHub这里有一个现成的React 组件，[react-recaptcha](https://github.com/appleboy/react-recaptcha)。
@@ -335,6 +337,9 @@ export default RecaptchaItem;
 
 以上两个组件的代码都借鉴了官方的例子 <https://ant.design/components/form/> ，可以两边对照看，方便理解代码。
 
+
+## 登录和注册
+
 接下来我们需要在 Header 的导航栏的中添加两个按钮，注册和登录。点击登录按钮，会弹出一个模态对话框，显示登录表单；点击注册按钮，会弹出一个模态对话框，显示注册表单。代码见`imports/ui/layouts/Header.jsx`。
 
 当用户成功登录后，需要隐藏登录和注册按钮，同时在导航栏添加一个下拉菜单，用户展示`我的主页`，`退出`等菜单，具体代码见 `imports/ui/layouts/Header.jsx`。
@@ -382,9 +387,71 @@ FlowRouter.route('/logout', {
 
 用浏览器打开 <http://localhost:3000/> 后按组合键 `Ctrl+M`，可以在网页右下键看到一个面板，在这里可以查看数据库里的所有数据，非常方便。由于 Mongol 是一个`debugOnly`的包， 当你编译 release 版的时候Meteor 的编译工具会自动的排除它，相当贴心。
 
+这个工具只能查看客户端的minimongo里的数据，如果你的数据没有publish 到客户端，那它也是看不到的。为了完整的查看服务端Mongodb里的数据，可以用任何一个 MongoDB 客户端连接MongdoDB，比如官方的 [MongoDB Compass](https://www.mongodb.com/products/compass)。Meteor 的 MongoDB通常运行在 3001端口，可以输入 `meteor mongo`打开一个shell 查看端口。
+
+
+## 忘记密码
+
+首先新建一个`ForgotPassword`组件，`imports/ui/components/ForgotPassword.jsx`, 在客户端调用 `Accounts.forgotPassword()`来发送密码重置邮件，详细代码见 `ForgotPassword.jsx`.
+
+需要在`imports/startup/client/routes.js` 里为 `ForgotPassword`组件添加一条路由规则，
+
+```javascript
+FlowRouter.route('/forgot-password', {
+  name: 'forgot-password',
+  action() {
+    mount(MainLayout, {
+      children: (<ForgotPassword />)
+    });
+  },
+});
+```
+
+邮件里默认的 `reset-password` 的URL是 `/#/reset-password/token`，例如 <http://localhost:3000/#/reset-password/75FUsHf3CiyGaGxr4akWWGetohIBb00AJ1gL0coQ58D>，如何需改URL的格式呢？ 需要定制邮件模板。
+
+新建一个文件， `imports/startup/server/email-config.js`, 定制邮件模板，并在 `server/main.js`中import这个文件。
+
+```javascript
+// Reset password E-mail
+Accounts.emailTemplates.resetPassword.from = function() {
+  return "AwesomeSite Admin <no-replay@example.com>";
+}
+Accounts.emailTemplates.resetPassword.subject = function (user) {
+  return "How to reset your password on " + Meteor.absoluteUrl();
+};
+Accounts.emailTemplates.resetPassword.text = function (user, url) {
+  url = url.replace('#/', '');
+  return "Hello " + user.username + ",\n\nTo reset your password, simply click the link below.\n\n" + url + "\n\nThanks.";
+};
+```
+
+此时，我们用用浏览器打开 `http://localhost:3000/forgot-password`，点击提交按钮，在服务器端的命令行下，会发现打印出了邮件的内容，但是并没有发送成功，
+
+    ====== BEGIN MAIL #0 ======
+    (Mail not sent; to enable sending, set the MAIL_URL environment variable.)
+
+原来，我们还需要设置一个`MAIL_URL`，指定一个邮件发送商，这里我们选择 Mailgun。
+
+当用户在点击邮件里的链接 <http://localhost:3000/#/reset-password/75FUsHf3CiyGaGxr4akWWGetohIBb00AJ1gL0coQ58D>，我们需要响应该 URL，首先，添加一条路由规则，
+
+```javascript
+FlowRouter.route('/reset-password/:token', {
+  name: 'reset-password',
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<ResetPassword token={params.token}/>)
+    });
+  },
+});
+```
+
+然后新建一个`ResetPassword` 组件，`imports/ui/components/ResetPassword.jsx`, 核心逻辑就是两个输入框，用于输入两遍密码，以及调用``来重置密码，代码见该文件。
+
 
 # 参考资料：
 
+* [Creating a Custom Login and Registration Form with Meteor - sitepoint](https://www.sitepoint.com/creating-custom-login-registration-form-with-meteor/)
+* [Building a customized accounts ui for Meteor - by Ben McMahen](http://blog.benmcmahen.com/post/41741539120/building-a-customized-accounts-ui-for-meteor)
 * [meteor-useraccounts/boilerplates/bootstrap-flow-router-react/](https://github.com/meteor-useraccounts/boilerplates/tree/master/bootstrap-flow-router-react)
 * [meteor/todos](https://github.com/meteor/todos)
 * [meteor-boilerplate](https://github.com/surfer77/meteor-boilerplate)

@@ -86,15 +86,14 @@ class Login extends React.Component {
           })(
             <Checkbox>记住我</Checkbox>
           )}
-          <a className="login-form-forgot" style={styles.loginFormForgot}>忘记密码</a>
+          <a className="login-form-forgot" href='/forgot-password' style={styles.loginFormForgot}>忘记密码</a>
           <Button type="primary" htmlType="submit" style={styles.loginFormButton}>
             登录
           </Button>
-          或者 <a>现在注册！</a>
         </FormItem>
         { this.state.loginFailed ?
-        <Alert message="用户名或密码错误" type="error"/>
-        : null
+          <Alert message="用户名或密码错误" type="error"/>
+          : null
         }
       </Form>
     );
