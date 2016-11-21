@@ -7,11 +7,15 @@ import Tooltip from 'antd/lib/tooltip';
 import Icon from 'antd/lib/icon';
 import Button from 'antd/lib/button';
 import message from 'antd/lib/message';
+import Radio from 'antd/lib/radio';
+import Select from 'antd/lib/select';
 
 import RecaptchaItem from './RecaptchaItem';
 
-
 const FormItem = Form.Item;
+const RadioGroup = Radio.Group;
+const Option = Select.Option;
+
 
 class Signup extends React.Component {
   constructor(props) {
@@ -36,7 +40,8 @@ class Signup extends React.Component {
               Accounts.createUser({
                 username: values.username,
                 email: values.email,
-                password: values.password
+                password: values.password,
+                profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}
               }, (error) => {
                 if (error) console.log('Signup failed with error: ', error);
                 else message.success("注册成功！");
@@ -100,12 +105,16 @@ class Signup extends React.Component {
       }
     });
   }
+
   render() {
     const { getFieldDecorator } = this.props.form;
     const formItemLayout = {
       labelCol: { span: 6 },
       wrapperCol: { span: 14 },
     };
+
+    const beginYear=  (new Date().getFullYear())-80;
+    const years = [...Array(63).keys()].map((x)=>x+beginYear);
 
     return (
       <Form horizontal onSubmit={this.handleSubmit.bind(this)} style={{maxWidth: 300}}>
@@ -175,6 +184,36 @@ class Signup extends React.Component {
             }],
           })(
             <Input />
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="性别"
+          hasFeedback
+        >
+          {getFieldDecorator('gender', {
+            rules: [{ required: true, message: '请选择一个性别' }],
+          })(
+            <RadioGroup>
+              <Radio key="male" value='male'>男</Radio>
+              <Radio key="female" value='female'>女</Radio>
+            </RadioGroup>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="出生年份"
+          hasFeedback
+        >
+          {getFieldDecorator('birthyear', {
+            rules: [{ required: true, message: '请选择一个出生年份' }],
+          })(
+            <Select size="large" style={{ width: 100 }}>
+              { years.map((year)=> {
+                return (<Option value={''+year} key={''+year}>{year}</Option>);
+                })
+              }
+            </Select>
           )}
         </FormItem>
         <FormItem>

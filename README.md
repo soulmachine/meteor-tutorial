@@ -448,6 +448,28 @@ FlowRouter.route('/reset-password/:token', {
 然后新建一个`ResetPassword` 组件，`imports/ui/components/ResetPassword.jsx`, 核心逻辑就是两个输入框，用于输入两遍密码，以及调用``来重置密码，代码见该文件。
 
 
+## 添加额外字段
+
+默认的 `accounts-password`，用户的信息只有 `username`, `email`, `password`三项，如何添加额外的字段呢？假设我们要添加两个字段，性别 `gender` 和出生年份 `birthyear`。
+
+基本的思路是：
+
+1. 在客户端调用`Accounts.createUser()`的时候，传入第四个参数`profile`, `profile`就是一个普通的对象，包含两个字段 `gender`和`birthyear`
+1. 在服务端自定义一个 `Accounts.onCreateUser()`函数，Meteor会自动调用这个函数，在这个函数内部，将客户端传过来的`profile`保存起来
+
+第一步，修改 `Signup.jsx`，添加两个字段，性别`gender`和出生年份`birthday`，在 `handleSubmit()`中调用 `Accounts.createUser()`时，第四个参数设置为 `profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}`，更多细节请阅读该文件。
+
+第二步，新建一个文件 `imports/startup/server/extra-fields.js`，内容如下，
+
+```javascript
+Accounts.onCreateUser(function(options, user) {
+  return _.extend(user, {...options});
+});
+```
+
+并在 `server/main.js` 引入这个文件。在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户的profile里多了两个字段 `gender`和 `birthyear`，而老的用户是没有 `profile`这个字段的，大功告成！
+
+
 # 参考资料：
 
 * [Creating a Custom Login and Registration Form with Meteor - sitepoint](https://www.sitepoint.com/creating-custom-login-registration-form-with-meteor/)
