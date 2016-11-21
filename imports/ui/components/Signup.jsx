@@ -1,6 +1,7 @@
 import React from 'react';
 
 import 'antd/dist/antd.css';
+import Alert from 'antd/lib/alert';
 import Form from 'antd/lib/form';
 import Input from 'antd/lib/input';
 import Tooltip from 'antd/lib/tooltip';
@@ -18,17 +19,20 @@ class Signup extends React.Component {
     super(props);
     this.state = {
       passwordDirty: false,
+      signupFailed: false,
+      signupFailureReason: '',
     };
   }
 
   handleSubmit(e) {
     e.preventDefault();
+    this.setState({signupFailed: false, signupFailureReason: ''});
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (err) {
         console.log(err);
       } else {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, function(error, result){
+        Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
           if(error){
             console.log("Captcha verification failed with error: ", error);
           } else {
@@ -37,8 +41,8 @@ class Signup extends React.Component {
                 username: values.username,
                 email: values.email,
                 password: values.password
-              }, function(error) {
-                if (error) message.error(error.reason);
+              }, (error) => {
+                if (error) this.setState({signupFailed: true, signupFailureReason: error.reason});
                 else message.success("注册成功！");
               });
             } else {
@@ -149,6 +153,10 @@ class Signup extends React.Component {
         <FormItem>
           <Button type="primary" htmlType="submit" style={{width: '100%'}}>注册</Button>
         </FormItem>
+        { this.state.signupFailed ?
+          <Alert message={this.state.signupFailureReason} type="error"/>
+          : null
+        }
       </Form>
     );
   }

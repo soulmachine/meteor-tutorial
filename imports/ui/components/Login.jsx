@@ -2,6 +2,7 @@ import React from 'react';
 import { Meteor } from 'meteor/meteor';
 
 import 'antd/dist/antd.css';
+import Alert from 'antd/lib/alert';
 import Form from 'antd/lib/form';
 import Icon from 'antd/lib/icon';
 import Input from 'antd/lib/input';
@@ -14,18 +15,25 @@ import RecaptchaItem from './RecaptchaItem';
 const FormItem = Form.Item;
 
 class Login extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loginFailed: false,
+    };
+  }
   handleSubmit(e) {
     e.preventDefault();
+    this.setState({loginFailed: false});
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, function(error, result){
+        Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
           if(error){
             console.log("Captcha verification failed with error: ", error);
           } else {
             if (result) {
-              Meteor.loginWithPassword(values.username, values.password, function(error){
-                if (error) message.error("登录失败，用户名或密码错误");
+              Meteor.loginWithPassword(values.username, values.password, (error) => {
+                if (error) this.setState({loginFailed: true});
                 else message.success("登录成功！");
               });
             } else {
@@ -84,6 +92,10 @@ class Login extends React.Component {
           </Button>
           或者 <a>现在注册！</a>
         </FormItem>
+        { this.state.loginFailed ?
+        <Alert message="用户名或密码错误" type="error"/>
+        : null
+        }
       </Form>
     );
   }
