@@ -6,6 +6,8 @@ import NotFound from '../../ui/components/NotFound';
 
 import Welcome from '../../ui/components/Welcome';
 import Todo from '../../ui/components/Todo';
+import LoginPage from '../../ui/pages/LoginPage';
+import SignupPage from '../../ui/pages/SignupPage';
 import ForgotPassword from '../../ui/components/ForgotPassword';
 import ResetPassword from '../../ui/components/ResetPassword';
 
@@ -36,12 +38,27 @@ FlowRouter.notFound = {
   }
 };
 FlowRouter.route('/logout', {
-  name: 'logout',
   action() {
     console.log("logout");
     Meteor.logout();
     FlowRouter.redirect('/');
   }
+});
+
+FlowRouter.route('/login', {
+  action() {
+    mount(MainLayout, {
+      children: (<LoginPage />)
+    });
+  },
+});
+
+FlowRouter.route('/signup', {
+  action() {
+    mount(MainLayout, {
+      children: (<SignupPage />)
+    });
+  },
 });
 
 FlowRouter.route('/forgot-password', {

@@ -340,9 +340,29 @@ export default RecaptchaItem;
 
 ## 登录和注册
 
-接下来我们需要在 Header 的导航栏的中添加两个按钮，注册和登录。点击登录按钮，会弹出一个模态对话框，显示登录表单；点击注册按钮，会弹出一个模态对话框，显示注册表单。代码见`imports/ui/layouts/Header.jsx`。
+接下来我们需要在 Header 的导航栏的中添加两个链接，登录和注册，分别指向`/login`和 `/signup`。当用户成功登录后，需要隐藏登录和注册链接，替换成一个下拉菜单，里面有`我的主页`、`设置`和`退出`等菜单。
 
-当用户成功登录后，需要隐藏登录和注册按钮，同时在导航栏添加一个下拉菜单，用户展示`我的主页`，`退出`等菜单，具体代码见 `imports/ui/layouts/Header.jsx`。
+首先新建两个组件，`imports/ui/components/Login.jsx` 和 `imports/ui/components/Signup.jsx`。然后，创建两个页面作为入口点提供给 Flow Router ，这两个页面逻辑很简单，仅仅只是居中显示 `Login`和`Signup`组件，代码见 `imports/ui/pages/LoginPage.jsx` 和 `imports/ui/pages/SignupPage.jsx`。
+
+在 `imports/startup/client/routes.jsx` 中添加两条路由规则，
+
+```javascript
+FlowRouter.route('/login', {
+  action() {
+    mount(MainLayout, {
+      children: (<LoginPage />)
+    });
+  },
+});
+
+FlowRouter.route('/signup', {
+  action() {
+    mount(MainLayout, {
+      children: (<SignupPage />)
+    });
+  },
+});
+```
 
 有一点需要注意，默认的下拉菜单里的每一项，高度太高了，需要单独给一个样式，在 `Header.less`添加如下一段样式：
 
@@ -392,7 +412,7 @@ FlowRouter.route('/logout', {
 
 ## 忘记密码
 
-`忘记密码`的功能需要给用户发送密码重置邮件，所以首先需要安装 `email`包，
+忘记密码的功能需要给用户发送密码重置邮件，所以首先需要安装 `email`包，
 
     meteor add email
 

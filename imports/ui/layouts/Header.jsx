@@ -11,12 +11,8 @@ import Icon from 'antd/lib/icon';
 import Button from 'antd/lib/button';
 import Popover from 'antd/lib/popover';
 import Input from 'antd/lib/input';
-import Modal from 'antd/lib/modal';
 
 import 'antd/dist/antd.css';
-
-import Login from '../components/Login';
-import Signup from '../components/Signup';
 
 
 import classNames from 'classnames';
@@ -68,70 +64,6 @@ const SearchInput = React.createClass({
         </InputGroup>
       </div>
     );
-  },
-});
-
-
-const LoginSignup = React.createClass({
-  getInitialState() {
-    return { loginVisible: false, signupVisible: false };
-  },
-  showLogin() {
-    this.setState({
-      loginVisible: true,
-    });
-  },
-  handleLoginCancel() {
-    this.setState({
-      loginVisible: false,
-    });
-  },
-  showSignup() {
-    this.setState({
-      signupVisible: true,
-    });
-  },
-  handleSignupCancel() {
-    this.setState({
-      signupVisible: false,
-    });
-  },
-  render() {
-    return (
-      <div className="lang">
-        <Button type="ghost" onClick={this.showLogin}>
-          登录
-        </Button>
-        {' '}
-        <Button type="ghost" onClick={this.showSignup}>
-          注册
-        </Button>
-        { this.state.loginVisible ?
-          <Modal title="登录" visible={this.state.loginVisible} width={334}
-                 onOk={this.handleLoginOK} onCancel={this.handleLoginCancel}
-                 footer={[
-                   null, null,
-                 ]}
-                 maskClosable={false}
-          >
-            <Login/>
-          </Modal>
-          : null
-        }
-        { this.state.signupVisible ?
-          <Modal title="注册" visible={this.state.signupVisible} width={334}
-                 onOk={this.handleSignupOK} onCancel={this.handleSignupCancel}
-                 footer={[
-                   null, null,
-                 ]}
-                 maskClosable={false}
-          >
-            <Signup/>
-          </Modal>
-          : null
-        }
-      </div>
-    )
   },
 });
 
@@ -192,7 +124,7 @@ class Header extends React.Component {
       ]
     } else {
       menu = [
-        <LoginSignup key='loginsignup'/>,
+        <span className="lang" key='loginsignup'><a href="/login">登录</a>{' '}<a href="/signup">注册</a></span>,
         <Menu mode={this.state.menuMode} selectedKeys={[activeMenuItem]} id="nav" key="nav">
           <Menu.Item key="home">
             <a href="/">首页</a>
