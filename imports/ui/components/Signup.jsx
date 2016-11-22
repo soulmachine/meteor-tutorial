@@ -74,7 +74,7 @@ class Signup extends React.Component {
     callback();
   }
   usernameExists(rule, value, callback) {
-    console.log('value: ', value);
+    console.log('username: ', value);
     Meteor.call('usernameExists', value, (error, result) => {
       if (error) {
         console.log('There is an error while checking username');
@@ -90,7 +90,7 @@ class Signup extends React.Component {
     });
   }
   emailExists(rule, value, callback) {
-    console.log('value: ', value);
+    console.log('email: ', value);
     Meteor.call('emailExists', value, (error, result) => {
       if (error) {
         console.log('There is an error while checking email');
@@ -98,7 +98,6 @@ class Signup extends React.Component {
       } else {
         if (result) {
           callback('该E-mail已经存在');
-
         } else {
           callback();
         }
@@ -135,6 +134,7 @@ class Signup extends React.Component {
               required: true, message: '请输入用户名'
             }, { validator: this.usernameExists.bind(this)
             }],
+            validateTrigger: 'onBlur',
           })(
             <Input />
           )}
@@ -182,6 +182,7 @@ class Signup extends React.Component {
             }, {
               validator: this.emailExists.bind(this),
             }],
+            validateTrigger: 'onBlur',
           })(
             <Input />
           )}

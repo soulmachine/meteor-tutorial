@@ -24,6 +24,21 @@ class ForgotPassword extends React.Component {
     };
   }
 
+  emailExists(rule, value, callback) {
+    console.log('email: ', value);
+    Meteor.call('emailExists', value, (error, result) => {
+      if (error) {
+        console.log('There is an error while checking email');
+        callback();
+      } else {
+        if (result) {
+          callback('该E-mail已经存在');
+        } else {
+          callback();
+        }
+      }
+    });
+  }
   handleSubmit(e) {
     e.preventDefault();
     this.setState({alertVisable: false, failed: false, failureReason: ''});
@@ -85,17 +100,16 @@ class ForgotPassword extends React.Component {
     <Row>
       <Col span={8} offset={8}>
         <Form onSubmit={this.handleSubmit.bind(this)} style={styles.loginForm}>
-          <FormItem
-            {...formItemLayout}
-            label="E-mail"
-            hasFeedback
-          >
+          <FormItem>
             {getFieldDecorator('email', {
               rules: [{
                 type: 'email', message: '输入的E-mail地址不符合格式',
               }, {
                 required: true, message: '请输入你的E-mail地址',
+              }, {
+                validator: this.emailExists.bind(this),
               }],
+              validateTrigger: 'onBlur',
             })(
               <Input addonBefore={<Icon type="mail" />} placeholder="请输入你的E-mail" />
             )}
