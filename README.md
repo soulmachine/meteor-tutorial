@@ -392,6 +392,10 @@ FlowRouter.route('/logout', {
 
 ## 忘记密码
 
+`忘记密码`的功能需要给用户发送密码重置邮件，所以首先需要安装 `email`包，
+
+    meteor add email
+
 首先新建一个`ForgotPassword`组件，`imports/ui/components/ForgotPassword.jsx`, 在客户端调用 `Accounts.forgotPassword()`来发送密码重置邮件，详细代码见 `ForgotPassword.jsx`.
 
 需要在`imports/startup/client/routes.js` 里为 `ForgotPassword`组件添加一条路由规则，
