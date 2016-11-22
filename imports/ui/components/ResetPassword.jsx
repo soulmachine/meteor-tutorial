@@ -36,8 +36,9 @@ class ResetPassword extends React.Component {
                   this.setState({updateFailed: true});
                   console.log('Password Reset Error: ', error);
                 } else {
-                  message.success('密码更新成功！')
-                  console.log('Password updated successfully!')
+                  message.success('密码更新成功！');
+                  console.log('Password updated successfully!');
+                  FlowRouter.redirect('/');
                 }
               });
             } else {

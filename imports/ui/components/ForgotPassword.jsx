@@ -32,9 +32,9 @@ class ForgotPassword extends React.Component {
         callback();
       } else {
         if (result) {
-          callback('该E-mail已经存在');
-        } else {
           callback();
+        } else {
+          callback('该E-mail不存在');
         }
       }
     });
