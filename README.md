@@ -430,7 +430,15 @@ Accounts.emailTemplates.resetPassword.text = function (user, url) {
     ====== BEGIN MAIL #0 ======
     (Mail not sent; to enable sending, set the MAIL_URL environment variable.)
 
-原来，我们还需要设置一个`MAIL_URL`，指定一个邮件发送商，这里我们选择 Mailgun。
+原来，我们还需要设置一个`MAIL_URL`，指定一个邮件发送商，以 Mailgun 为例，它的`MAIL_URL`的格式如下：
+
+    export MAIL_URL="smtp://postmaster%40<your-mailgun-address>.mailgun.org:<password>@smtp.mailgun.org:587";
+
+`%40` 其实就是 `@`字符。
+
+举个例子，我用Mailgun提供的免费sandbox做测试，真实的`MAIL_URL`是，
+
+    export MAIL_URL="smtp://postmaster%40sandbox2cccd60b3708468faf6c2bfdda8d8ee3.mailgun.org:997b6b3a8e05f882f25b6ed1c3c817f4@smtp.mailgun.org:587" meteor  --settings settings.json
 
 当用户在点击邮件里的链接 <http://localhost:3000/#/reset-password/75FUsHf3CiyGaGxr4akWWGetohIBb00AJ1gL0coQ58D>，我们需要响应该 URL，首先，添加一条路由规则，
 
