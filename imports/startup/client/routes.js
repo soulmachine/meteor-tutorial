@@ -12,6 +12,17 @@ import ForgotPassword from '../../ui/components/ForgotPassword';
 import ResetPassword from '../../ui/components/ResetPassword';
 
 
+const loggedInRoutes = FlowRouter.group({
+  triggersEnter: [function() {
+    if(!Meteor.loggingIn() && !Meteor.userId()) {
+      if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') { // all public pages
+        Session.set("previous-url", FlowRouter.current().path);
+        FlowRouter.redirect('/login');
+      }
+    }
+  }]
+});
+
 FlowRouter.route("/", {
   action() {
     mount(MainLayout, {
@@ -21,7 +32,7 @@ FlowRouter.route("/", {
   name: 'home'
 });
 
-FlowRouter.route("/todo", {
+loggedInRoutes.route("/todo", {
   action() {
     mount(MainLayout, {
       children: (<Todo />)
@@ -46,6 +57,7 @@ FlowRouter.route('/logout', {
 });
 
 FlowRouter.route('/login', {
+  name: 'login',
   action() {
     mount(MainLayout, {
       children: (<LoginPage />)

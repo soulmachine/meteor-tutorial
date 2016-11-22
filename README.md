@@ -403,13 +403,13 @@ FlowRouter.route('/logout', {
 
 当前还有一个小问题，当用户“登录”或“注册”成功后，不会自动跳转到登录和注册前的URL，怎么办呢？可以把当前URL保存到Session里，等登录成功后再跳转回来。
 
-首先安装 Session，一般默认自带了，但是为了确保万无一失还是安装一下，
+首先安装 Session，
 
     meteor add session
 
 在 `Header.jsx` 记录当前 URL，
 
-```
+```javascript
 if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') {
   Session.set("previous-url", FlowRouter.current().path);
 }
@@ -420,6 +420,7 @@ if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/sign
 ```javascript
 const previous = Session.get('previous-url');
 if (previous) FlowRouter.redirect(Session.get('previous-url'));
+else FlowRouter.redirect('/');
 Session.set('previous-url', undefined);
 ```
 
@@ -524,6 +525,39 @@ Accounts.onCreateUser(function(options, user) {
 并在 `server/main.js` 引入这个文件。在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户的profile里多了两个字段 `gender`和 `birthyear`，而老的用户是没有 `profile`这个字段的，大功告成！
 
 
+## 保护私密页面
+
+网站上的某些页面，必须要用户登录后才能访问，Flow Router 可以很方便的做到这一点。举个例子，假设 `/todo`这个页面需要保护起来。
+
+现在 `imports/startup/client/routes.js` 里新建一个 group,
+
+```javascript
+const loggedInRoutes = FlowRouter.group({
+  triggersEnter: [function() {
+    if(!Meteor.loggingIn() && !Meteor.userId()) {
+      if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') { // all public pages
+        Session.set("previous-url", FlowRouter.current().path);
+        FlowRouter.redirect('/login');
+      }
+    }
+  }]
+});
+```
+
+以后所有需要保护起来的私密页面，都可以用这个 group，
+
+```javascript
+loggedInRoutes.route("/todo", {
+  action() {
+    mount(MainLayout, {
+      children: (<Todo />)
+    });
+  },
+  name: 'todo'
+});
+```
+
+
 # 参考资料：
 
 * [Creating a Custom Login and Registration Form with Meteor - sitepoint](https://www.sitepoint.com/creating-custom-login-registration-form-with-meteor/)
@@ -533,4 +567,6 @@ Accounts.onCreateUser(function(options, user) {
 * [meteor-boilerplate](https://github.com/surfer77/meteor-boilerplate)
 * [Meteor-reCAPTCHA](https://github.com/Altapp/Meteor-reCAPTCHA)
 * [Extending Meteor.users - Medium](https://medium.com/all-about-meteorjs/extending-meteor-users-300a6cb8e17f)
+* [Guide: how to use Flow Router for authentication and permissions in the route layer](https://crater.io/posts/CsR7ChkDiHEWfhkHn/guide-how-to-use-flow-router-for-authentication-and)
+* [Meteor: Using Flow Router for authentication and permissions](https://medium.com/@satyavh/using-flow-router-for-authentication-ba7bb2644f42#.xw8wfl3yg)
 

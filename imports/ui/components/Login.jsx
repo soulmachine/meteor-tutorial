@@ -38,6 +38,7 @@ class Login extends React.Component {
                   message.success("登录成功！");
                   const previous = Session.get('previous-url');
                   if (previous) FlowRouter.redirect(Session.get('previous-url'));
+                  else FlowRouter.redirect('/');
                   Session.set('previous-url', undefined);
                 }
               });
@@ -95,6 +96,7 @@ class Login extends React.Component {
           <Button type="primary" htmlType="submit" style={styles.loginFormButton}>
             登录
           </Button>
+          或者 <a href="/signup">现在注册！</a>
         </FormItem>
         { this.state.loginFailed ?
           <Alert message="用户名或密码错误" type="error"/>

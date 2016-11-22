@@ -48,6 +48,7 @@ class Signup extends React.Component {
                   message.success("注册成功！");
                   const previous = Session.get('previous-url');
                   if (previous) FlowRouter.redirect(Session.get('previous-url'));
+                  else FlowRouter.redirect('/');
                   Session.set('previous-url', undefined);
                 }
               });
