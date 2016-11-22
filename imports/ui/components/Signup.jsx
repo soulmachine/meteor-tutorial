@@ -44,7 +44,12 @@ class Signup extends React.Component {
                 profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}
               }, (error) => {
                 if (error) console.log('Signup failed with error: ', error);
-                else message.success("注册成功！");
+                else {
+                  message.success("注册成功！");
+                  const previous = Session.get('previous-url');
+                  if (previous) FlowRouter.redirect(Session.get('previous-url'));
+                  Session.set('previous-url', undefined);
+                }
               });
             } else {
               console.log("Captcha verification failed");

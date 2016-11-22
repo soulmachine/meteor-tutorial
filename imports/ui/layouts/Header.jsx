@@ -123,6 +123,9 @@ class Header extends React.Component {
         </Menu>,
       ]
     } else {
+      if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') {
+        Session.set("previous-url", FlowRouter.current().path);
+      }
       menu = [
         <span className="lang" key='loginsignup'><a href="/login">登录</a>{' '}<a href="/signup">注册</a></span>,
         <Menu mode={this.state.menuMode} selectedKeys={[activeMenuItem]} id="nav" key="nav">

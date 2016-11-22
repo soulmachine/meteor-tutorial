@@ -34,7 +34,12 @@ class Login extends React.Component {
             if (result) {
               Meteor.loginWithPassword(values.username, values.password, (error) => {
                 if (error) this.setState({loginFailed: true});
-                else message.success("登录成功！");
+                else {
+                  message.success("登录成功！");
+                  const previous = Session.get('previous-url');
+                  if (previous) FlowRouter.redirect(Session.get('previous-url'));
+                  Session.set('previous-url', undefined);
+                }
               });
             } else {
               console.log("Captcha verification failed");

@@ -401,6 +401,28 @@ FlowRouter.route('/logout', {
 * `git rm imports/ui/components/AccountsUIWrapper.jsx`
 * `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
 
+当前还有一个小问题，当用户“登录”或“注册”成功后，不会自动跳转到登录和注册前的URL，怎么办呢？可以把当前URL保存到Session里，等登录成功后再跳转回来。
+
+首先安装 Session，一般默认自带了，但是为了确保万无一失还是安装一下，
+
+    meteor add session
+
+在 `Header.jsx` 记录当前 URL，
+
+```
+if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') {
+  Session.set("previous-url", FlowRouter.current().path);
+}
+```
+
+登录或注册成功后，返回之前的页面，
+
+```javascript
+const previous = Session.get('previous-url');
+if (previous) FlowRouter.redirect(Session.get('previous-url'));
+Session.set('previous-url', undefined);
+```
+
 （可选）为了调试方便，我们可以安装这个包，<https://github.com/msavin/Mongol>, 这个包可以查看客户端数据库 minimongo 里的所有 Collection。
 
     meteor add msavin:mongol
