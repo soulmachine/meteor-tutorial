@@ -70,16 +70,9 @@ class ForgotPassword extends React.Component {
 
   render() {
     const { getFieldDecorator } = this.props.form;
-    const formItemLayout = {
-      labelCol: { span: 6 },
-      wrapperCol: { span: 14 },
-    };
     const styles = {
       loginForm: {
         maxWidth: 300
-      },
-      loginFormForgot: {
-        float: 'right'
       },
       loginFormButton: {
         width: '100%'
