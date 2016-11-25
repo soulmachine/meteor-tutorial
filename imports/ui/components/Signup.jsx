@@ -86,34 +86,42 @@ class Signup extends React.Component {
   }
   usernameExists(rule, value, callback) {
     console.log('username: ', value);
-    Meteor.call('usernameExists', value, (error, result) => {
-      if (error) {
-        console.log('There is an error while checking username');
-        callback();
-      } else {
-        if (result) {
-          callback('该用户名已经存在');
-
-        } else {
+    if (value) {
+      Meteor.call('usernameExists', value, (error, result) => {
+        if (error) {
+          console.log('There is an error while checking username');
           callback();
+        } else {
+          if (result) {
+            callback('该用户名已经存在');
+
+          } else {
+            callback();
+          }
         }
-      }
-    });
+      });
+    } else {
+      callback();
+    }
   }
   emailExists(rule, value, callback) {
     console.log('email: ', value);
-    Meteor.call('emailExists', value, (error, result) => {
-      if (error) {
-        console.log('There is an error while checking email');
-        callback();
-      } else {
-        if (result) {
-          callback('该E-mail已经存在');
-        } else {
+    if (value) {
+      Meteor.call('emailExists', value, (error, result) => {
+        if (error) {
+          console.log('There is an error while checking email');
           callback();
+        } else {
+          if (result) {
+            callback('该E-mail已经存在');
+          } else {
+            callback();
+          }
         }
-      }
-    });
+      });
+    } else {
+      callback();
+    }
   }
 
   render() {
