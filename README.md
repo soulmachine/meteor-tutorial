@@ -542,7 +542,27 @@ Meteor.users.deny({
 });
 ```
 
-在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户多了两个字段 `gender`和 `birthyear`，而老的用户是没有 `profile`这个字段的，大功告成！
+在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户多了两个字段 `gender`和 `birthyear`，大功告成！
+
+不过按`Ctrl+M`调出Mongol，发现客户端只能看到很有限的几个字段，看不到 `gender`和 `birthyear`，怎么把一个user的其它字段也发布到客户端呢？通过 publish/subscrib 机制，首先在服务端 publish, 然后在客户端 subscribe。
+
+在 `imports/startup/server/extra-fields.js` 中，添加如下代码：
+
+```javascript
+Meteor.publish(null, function () {
+  return Meteor.users.find({
+    _id: this.userId
+  }, {
+    fields: {
+      birthyear: 1,
+      gender: 1,
+      nickname: 1,
+    }
+  });
+}, { is_auto: true });
+```
+
+按`Ctrl+M`调出Mongol，可以看到 `gender`和 `birthyear` 字段了！
 
 
 ## 保护私密页面
