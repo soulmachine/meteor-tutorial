@@ -99,7 +99,7 @@ FlowRouter.route('/lists/:_id', {
 });
 ```
 
-同时要在 `client/main.jsx` 中添加一行 `import '../imports/startup/client/routes.js';`，然后输入命令`meteor` 启动网站，在浏览器中输入 <http://localhost:3000/lists/123456>，在 Chrome 浏览器的 Developer Tool 的 Console中可以看到打印出了消息。这一小步证明 Flow Router 能正常工作。
+同时要在 `client/main.js` 中添加一行 `import '../imports/startup/client/routes.js';`，然后输入命令`meteor` 启动网站，在浏览器中输入 <http://localhost:3000/lists/123456>，在 Chrome 浏览器的 Developer Tool 的 Console中可以看到打印出了消息。这一小步证明 Flow Router 能正常工作。
 
 
 客户端路由可以根据根据不同的URL，选择渲染不同的组件，这时候需要一个 Layout Manager来配合路由一起工作。 [blaze-layout](https://github.com/kadirahq/blaze-layout), [react-layout](https://github.com/kadirahq/meteor-react-layout)和[react-mounter](https://github.com/kadirahq/react-mounter) 是三个比较有名的 Layout Manager, blaze-layout 只能和Blazy一起使用，react-layout和 react-mounter能和React一起使用，react-layout只能和 Meteor 1.3 以下兼容， react-mounter 只能和 Meteor 1.3+兼容 ，因此我们只有一个选择，就是 react-mounter。
@@ -240,7 +240,7 @@ FlowRouter.notFound = {
 };
 ```
 
-最后，修改 `client/main.jsx` 的内容如下：
+最后，修改 `client/main.js` 的内容如下：
 
 ```jsx
 import '../imports/startup/accounts-config.js';
@@ -399,7 +399,7 @@ FlowRouter.route('/logout', {
 * 运行 `meteor remove accounts-ui`，卸载 `accounts-ui`，因为我们有了自己的登录和注册界面，不再需要这个包了。注意不要卸载 `accounts-password`，这个包负责底层逻辑，是一个login service, 我们依然需要它。
 * 删除 `Todo.jsx` 里的 `AccountsUIWrapper`
 * `git rm imports/ui/components/AccountsUIWrapper.jsx`
-* `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
+* `git rm imports/startup/accounts-config.js`，并删除 `client/main.js`里的一行 `import '../imports/startup/accounts-config.js';`
 
 当前还有一个小问题，当用户“登录”或“注册”成功后，不会自动跳转到登录和注册前的URL，怎么办呢？可以把当前URL保存到Session里，等登录成功后再跳转回来。
 
@@ -507,6 +507,8 @@ FlowRouter.route('/reset-password/:token', {
 
 默认的 `accounts-password`，用户的信息只有 `username`, `email`, `password`三项，如何添加额外的字段呢？假设我们要添加两个字段，性别 `gender` 和出生年份 `birthyear`。
 
+根据官网的文档 [custom-user-data](https://guide.meteor.com/accounts.html#custom-user-data)，添加额外字段，最好是添加 top-level 的字段，不要用 `profile`这个字段。
+
 基本的思路是：
 
 1. 在客户端调用`Accounts.createUser()`的时候，传入第四个参数`profile`, `profile`就是一个普通的对象，包含两个字段 `gender`和`birthyear`
@@ -514,7 +516,14 @@ FlowRouter.route('/reset-password/:token', {
 
 第一步，修改 `Signup.jsx`，添加两个字段，性别`gender`和出生年份`birthday`，在 `handleSubmit()`中调用 `Accounts.createUser()`时，第四个参数设置为 `profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}`，更多细节请阅读该文件。
 
-第二步，新建一个文件 `imports/startup/server/extra-fields.js`，内容如下，
+第二步，新建一个文件 `imports/startup/server/extra-fields.js`并在 `server/main.js` 引入这个文件，该文件内容如下，
+
+```javascript
+Accounts.onCreateUser(function(options, user) {
+  return _.extend(user, {gender: options.profile.gender, birthyear: options.profile.birthyear});
+});
+```
+注意，为了防止客户端添加任意字段，`onCreateUser()`千万不要写成下面这样：
 
 ```javascript
 Accounts.onCreateUser(function(options, user) {
@@ -522,7 +531,18 @@ Accounts.onCreateUser(function(options, user) {
 });
 ```
 
-并在 `server/main.js` 引入这个文件。在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户的profile里多了两个字段 `gender`和 `birthyear`，而老的用户是没有 `profile`这个字段的，大功告成！
+前面那个`onCreateUser()`是正确的写法，即使客户端在 `profile` 里塞入任意字段，服务端还是只保存`gender`和 `birthyear`，把其他字段丢弃掉。
+
+为了防止客户端直接修改用户资料，可以在 `client/main.js` 中添加如下代码：
+
+```javascript
+// Deny all client-side updates to user documents
+Meteor.users.deny({
+  update() { return true; }
+});
+```
+
+在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户多了两个字段 `gender`和 `birthyear`，而老的用户是没有 `profile`这个字段的，大功告成！
 
 
 ## 保护私密页面
