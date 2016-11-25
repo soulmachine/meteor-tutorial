@@ -99,7 +99,7 @@ FlowRouter.route('/lists/:_id', {
 });
 ```
 
-同时要在 `client/main.js` 中添加一行 `import '../imports/startup/client/routes.js';`，然后输入命令`meteor` 启动网站，在浏览器中输入 <http://localhost:3000/lists/123456>，在 Chrome 浏览器的 Developer Tool 的 Console中可以看到打印出了消息。这一小步证明 Flow Router 能正常工作。
+同时要在 `client/main.jsx` 中添加一行 `import '../imports/startup/client/routes.js';`，然后输入命令`meteor` 启动网站，在浏览器中输入 <http://localhost:3000/lists/123456>，在 Chrome 浏览器的 Developer Tool 的 Console中可以看到打印出了消息。这一小步证明 Flow Router 能正常工作。
 
 
 客户端路由可以根据根据不同的URL，选择渲染不同的组件，这时候需要一个 Layout Manager来配合路由一起工作。 [blaze-layout](https://github.com/kadirahq/blaze-layout), [react-layout](https://github.com/kadirahq/meteor-react-layout)和[react-mounter](https://github.com/kadirahq/react-mounter) 是三个比较有名的 Layout Manager, blaze-layout 只能和Blazy一起使用，react-layout和 react-mounter能和React一起使用，react-layout只能和 Meteor 1.3 以下兼容， react-mounter 只能和 Meteor 1.3+兼容 ，因此我们只有一个选择，就是 react-mounter。
@@ -240,7 +240,7 @@ FlowRouter.notFound = {
 };
 ```
 
-最后，修改 `client/main.js` 的内容如下：
+最后，修改 `client/main.jsx` 的内容如下：
 
 ```jsx
 import '../imports/startup/accounts-config.js';
@@ -399,7 +399,7 @@ FlowRouter.route('/logout', {
 * 运行 `meteor remove accounts-ui`，卸载 `accounts-ui`，因为我们有了自己的登录和注册界面，不再需要这个包了。注意不要卸载 `accounts-password`，这个包负责底层逻辑，是一个login service, 我们依然需要它。
 * 删除 `Todo.jsx` 里的 `AccountsUIWrapper`
 * `git rm imports/ui/components/AccountsUIWrapper.jsx`
-* `git rm imports/startup/accounts-config.js`，并删除 `client/main.js`里的一行 `import '../imports/startup/accounts-config.js';`
+* `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
 
 当前还有一个小问题，当用户“登录”或“注册”成功后，不会自动跳转到登录和注册前的URL，怎么办呢？可以把当前URL保存到Session里，等登录成功后再跳转回来。
 
@@ -533,7 +533,7 @@ Accounts.onCreateUser(function(options, user) {
 
 前面那个`onCreateUser()`是正确的写法，即使客户端在 `profile` 里塞入任意字段，服务端还是只保存`gender`和 `birthyear`，把其他字段丢弃掉。
 
-为了防止客户端直接修改用户资料，可以在 `client/main.js` 中添加如下代码：
+为了防止客户端直接修改用户资料，可以在 `client/main.jsx` 中添加如下代码：
 
 ```javascript
 // Deny all client-side updates to user documents
