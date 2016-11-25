@@ -19,11 +19,12 @@ class Login extends React.Component {
     super(props);
     this.state = {
       loginFailed: false,
+      failedReason: '',
     };
   }
   handleSubmit(e) {
     e.preventDefault();
-    this.setState({loginFailed: false});
+    this.setState({loginFailed: false, failedReason: ''});
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
@@ -33,7 +34,7 @@ class Login extends React.Component {
           } else {
             if (result) {
               Meteor.loginWithPassword(values.username, values.password, (error) => {
-                if (error) this.setState({loginFailed: true});
+                if (error) this.setState({loginFailed: true, failedReason: '用户名或密码错误'});
                 else {
                   message.success("登录成功！");
                   const previous = Session.get('previous-url');
@@ -44,6 +45,7 @@ class Login extends React.Component {
               });
             } else {
               console.log("Captcha verification failed");
+              this.setState({loginFailed: true, failedReason: '验证码错误'});
             }
           }
         });
@@ -99,7 +101,7 @@ class Login extends React.Component {
           或者 <a href="/signup">现在注册！</a>
         </FormItem>
         { this.state.loginFailed ?
-          <Alert message="用户名或密码错误" type="error"/>
+          <Alert message={this.state.failedReason} type="error"/>
           : null
         }
       </Form>
