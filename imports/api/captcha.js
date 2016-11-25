@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 
 function verifyCaptcha(clientIP, response) {
   var captcha_data = {
-    secret: Meteor.settings.secretKey,
+    secret: Meteor.settings.reCAPTCHASecretKey,
     remoteip: clientIP,
     response: response
   };
@@ -46,9 +46,6 @@ Meteor.methods({
     var verifyCaptchaResponse = verifyCaptcha(this.connection.clientAddress, response);
     if (!verifyCaptchaResponse.success) {
       console.log('Captcha verification failed! Responding with: ', verifyCaptchaResponse);
-      return verifyCaptchaResponse;
-    } else {
-      console.log('Captcha verification passed!')
     }
     return verifyCaptchaResponse.success;
   },

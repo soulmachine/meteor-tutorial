@@ -23,7 +23,7 @@ const RecaptchaItem = React.createClass({
         />
         <ReactRecaptcha
           render="explicit"
-          sitekey={Meteor.settings.public.siteKey}
+          sitekey={Meteor.settings.public.reCAPTCHASiteKey}
           onloadCallback={() => {}}
           verifyCallback={this.verifyCallback}
         />

@@ -1,6 +1,6 @@
 {
-  "secretKey": "your secretkey",
+  "reCAPTCHASecretKey": "your secretkey",
   "public": {
-    "siteKey": "your sitekey"
+    "reCAPTCHASiteKey": "your sitekey"
   }
 }

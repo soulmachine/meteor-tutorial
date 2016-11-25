@@ -1,6 +1,7 @@
 import React from 'react';
 
 import 'antd/dist/antd.css';
+import Alert from 'antd/lib/alert';
 import Form from 'antd/lib/form';
 import Input from 'antd/lib/input';
 import Tooltip from 'antd/lib/tooltip';
@@ -21,22 +22,25 @@ class Signup extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      signupFailed: false,
+      failedReason: '',
       passwordDirty: false,
     };
   }
 
   handleSubmit(e) {
     e.preventDefault();
+    this.setState({signupFailed: false, failedReason: ''});
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (err) {
         console.log(err);
       } else {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
+        Meteor.call('verifyCaptcha', values.captcha, (error, success) => {
           if(error){
             console.log("Captcha verification failed with error: ", error);
           } else {
-            if (result) {
+            if (success) {
               Accounts.createUser({
                 username: values.username,
                 email: values.email,
@@ -54,6 +58,7 @@ class Signup extends React.Component {
               });
             } else {
               console.log("Captcha verification failed");
+              this.setState({signupFailed: true, failedReason: "验证码校验失败！"});
             }
           }
         });
@@ -232,6 +237,10 @@ class Signup extends React.Component {
           <Button type="primary" htmlType="submit" style={{width: '100%'}}>注册</Button>
         </FormItem>
         <span>点击「注册」按钮，即代表你同意<a href="/terms">《用户协议》</a></span>
+        { this.state.signupFailed ?
+          <Alert message={this.state.failedReason} type="error"/>
+          : null
+        }
       </Form>
     );
   }
