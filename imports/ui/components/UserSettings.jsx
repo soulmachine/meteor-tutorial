@@ -227,7 +227,7 @@ const ChangePasswordForm = Form.create()(React.createClass({
       );
     } else {
       return (
-        <a href="#" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
+        <a href="javascript:;" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
       );
     }
   }
