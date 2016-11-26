@@ -11,15 +11,14 @@ import SignupPage from '../../ui/pages/SignupPage';
 import ForgotPassword from '../../ui/components/ForgotPassword';
 import ResetPassword from '../../ui/components/ResetPassword';
 import UserSettings from '../../ui/components/UserSettings';
+import VerifyEmail from '../../ui/components/VerifyEmail';
 
 
 const loggedInRoutes = FlowRouter.group({
-  triggersEnter: [function() {
-    if(!Meteor.loggingIn() && !Meteor.userId()) {
-      if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') { // all public pages
-        Session.set("previous-url", FlowRouter.current().path);
-        FlowRouter.redirect('/login');
-      }
+  triggersEnter: [function () {
+    if (!Meteor.loggingIn() && !Meteor.userId()) {
+      Session.set("previous-url", FlowRouter.current().path);
+      FlowRouter.go('/login');
     }
   }]
 });
@@ -106,6 +105,16 @@ FlowRouter.route('/reset-password/:token', {
   action(params, queryParams) {
     mount(MainLayout, {
       children: (<ResetPassword token={params.token}/>)
+    });
+  },
+});
+
+FlowRouter.route('/verify-email/:token', {
+  name: 'verify-email',
+  action(params, queryParams) {
+    console.log('route verify-email');
+    mount(MainLayout, {
+      children: (<VerifyEmail token={params.token} />)
     });
   },
 });

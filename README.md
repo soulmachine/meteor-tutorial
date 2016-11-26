@@ -446,6 +446,100 @@ Accounts.config({
 这个工具只能查看客户端的minimongo里的数据，如果你的数据没有publish 到客户端，那它也是看不到的。为了完整的查看服务端Mongodb里的数据，可以用任何一个 MongoDB 客户端连接MongdoDB，比如官方的 [MongoDB Compass](https://www.mongodb.com/products/compass)。Meteor 的 MongoDB通常运行在 3001端口，可以输入 `meteor mongo`打开一个shell 查看端口。
 
 
+## 验证邮箱
+
+为了在注册新用户是自动发送验证邮件，在 `imports/startup/server/accounts-config.js` 中添加一行配置即可，
+
+```javascript
+Accounts.config({
+  loginExpirationInDays: 7,
+  sendVerificationEmail: true,
+});
+```
+
+新建一个邮件模板，在 `imports/startup/server/email-config.js` 添加如下代码，
+
+```javascript
+// Verification email
+Accounts.emailTemplates.verifyEmail.from = function() {
+  return "AwesomeSite Admin <admin@example.com>";
+}
+Accounts.emailTemplates.verifyEmail.subject = function (user) {
+  return "Please verify your email, " + user.username;
+};
+Accounts.emailTemplates.verifyEmail.text = function (user, url) {
+  url = url.replace('#/', '');
+  return "Hello " + user.username + ",\n\nTo verify your email, simply click the link below.\n\n" + url + "\n\nThanks.";
+};
+```
+
+接下来要新建一个新页面，当用户打开邮件点击链接时需要跳转到这个页面。首先添加一条新的路由规则，跟 `/reset-password` 很类似，
+
+```javascript
+import VerifyEmail from '../../ui/components/VerifyEmail';
+
+FlowRouter.route('/verify-email/:token', {
+  name: 'verify-email',
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<VerifyEmail token={params.token}/>)
+    });
+  },
+});
+```
+
+新建一个组件，`imports/ui/components/VerifyEmail.jsx`，
+
+```jsx
+import React from 'react';
+import { Accounts } from 'meteor/accounts-base';
+
+import 'antd/dist/antd.css';
+import Alert from 'antd/lib/alert';
+import Row from 'antd/lib/row';
+import Col from 'antd/lib/col';
+
+export default class VerifyEmail extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      verificationFailed: false,
+    };
+  }
+  componentDidMount() {
+    Accounts.verifyEmail(this.props.token, (error) => {
+      if (error) {
+        this.setState({verificationFailed: true});
+        console.log(error);
+      } else {
+        this.setState({verificationFailed: false});
+      }
+    });
+  }
+  render() {
+    return (
+      <Row>
+        <Col span={8} offset={8}>
+          <div style={{ height: 210 }}>
+            { this.state.verificationFailed ?
+              <Alert
+                message="邮箱验证失败"
+                description='链接已经过期。请登录后点击右上角"设置->账号和密码"，重新发送邮件'
+                type="error"
+                showIcon
+              />
+              :
+              <Alert message="邮箱验证成功" type="success" showIcon />
+            }
+          </div>
+        </Col>
+      </Row>
+    );
+  }
+};
+```
+
+
 ## 忘记密码
 
 忘记密码的功能需要给用户发送密码重置邮件，所以首先需要安装 `email`包，
@@ -579,12 +673,11 @@ Meteor.publish(null, function () {
 
 ```javascript
 const loggedInRoutes = FlowRouter.group({
-  triggersEnter: [function() {
-    if(!Meteor.loggingIn() && !Meteor.userId()) {
-      if (FlowRouter.current().path != '/login' && FlowRouter.current().path != '/signup') { // all public pages
-        Session.set("previous-url", FlowRouter.current().path);
-        FlowRouter.redirect('/login');
-      }
+  triggersEnter: [function () {
+    if (!Meteor.loggingIn() && !Meteor.userId()) {
+      Session.set("previous-url", FlowRouter.current().path);
+      FlowRouter.go('/login');
+
     }
   }]
 });
@@ -608,7 +701,7 @@ loggedInRoutes.route("/todo", {
 
 这一节主要实现用户设置的各种功能，例如基本资料、验证邮箱，修改密码等。
 
-## 基本资料页面
+## 基本资料
 
 首先在 `routes.js` 中添加一条路由规则，
 
@@ -819,6 +912,82 @@ if (Meteor.isServer) {
 ```
 
 即用 `Meteor.call('user.updateNickname', values.nickname)` 替换了原来的 `Meteor.users.update(Meteor.userId(), {$set: {nickname: values.nickname}})` 。
+
+
+## 账号和密码：发送验证邮件
+
+这一小节将完成“账号和密码”标签页中的发送验证邮件功能。
+
+`Accounts.sendVerificationEmail()` 只在服务端可用，因此我们需要把它包装成一个 Meteor method, 新建一个文件 `imports/api/accounts.js`,
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
+
+if (Meteor.isServer) {
+  Meteor.methods({
+    'sendVerificationEmail' () {
+      Accounts.sendVerificationEmail(Meteor.userId());
+    },
+  });
+}
+```
+
+然后在 `server/main.js` 中引入这个文件。
+
+接下来开始写 `AccountTab` 组件，
+
+```jsx
+const AccountTab = React.createClass({
+  getInitialState() {
+    return {
+      counter: TIME_OUT,
+      intervalId: null,
+    };
+  },
+  resendEmail() {
+    Meteor.call('sendVerificationEmail', (error, result)=> {
+      if (error) {
+        message.error("验证邮件重发失败", 3);
+        console.error(error);
+      } else {
+        message.success("验证邮件重发成功", 3);
+      }
+    });
+
+    intervalId = Meteor.setInterval(() => {
+      if (this.state.counter > 0) this.setState({counter: this.state.counter-1});
+    }, 1000);
+    this.setState({intervalId: intervalId});
+  },
+  componentWillUpdate() {
+    if (this.state.counter <= 1) { // attention! it's 1 instead of 0
+      Meteor.clearInterval(this.state.intervalId);
+      this.setState({counter: TIME_OUT, intervalId: null});
+    }
+  },
+  render() {
+    return (
+      <Row>
+        <Col span={1}>邮箱：</Col>
+        <Col span={12}>
+          { this.props.currentUser ? this.props.currentUser.emails[0].address + (this.props.currentUser.emails[0].verified ? "(已验证)" : null) : null}
+          <br />
+          { this.props.currentUser && !this.props.currentUser.emails[0].verified ?
+            <span>
+              <Alert message="你的邮箱尚未激活，请查收邮件激活。激活后你就可以使用发帖，点评等功能啦。" type="warning" />
+              <Button type="primary" onClick={this.resendEmail} disabled={this.state.counter!=TIME_OUT}>{this.state.counter != TIME_OUT ? "再发一次("+this.state.counter+")" : "再发一次"}</Button>
+            </span>
+            : null
+          }
+        </Col>
+      </Row>
+    );
+  },
+});
+```
+
+这个组件的基本功能就是判断邮箱是否已验证，没有的话就展示一个“重新发送”按钮，当用户点击之后，启动一个倒计时。
 
 
 # 参考资料：

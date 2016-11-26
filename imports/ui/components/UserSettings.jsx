@@ -1,14 +1,17 @@
 import React from 'react';
 import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
 import { createContainer } from 'meteor/react-meteor-data';
 
 import 'antd/dist/antd.css';
 import Alert from 'antd/lib/alert';
 import Button from 'antd/lib/button';
+import Col from 'antd/lib/col';
 import Form from 'antd/lib/form';
 import Icon from 'antd/lib/icon';
 import Input from 'antd/lib/input';
 import Menu from 'antd/lib/menu';
+import Row from 'antd/lib/row';
 import Tooltip from 'antd/lib/tooltip';
 import message from 'antd/lib/message';
 
@@ -117,6 +120,56 @@ const ProfileTab = Form.create()(React.createClass({
   },
 }));
 
+const TIME_OUT = 60;  // seconds
+
+const AccountTab = React.createClass({
+  getInitialState() {
+    return {
+      counter: TIME_OUT,
+      intervalId: null,
+    };
+  },
+  resendEmail() {
+    Meteor.call('sendVerificationEmail', (error, result)=> {
+      if (error) {
+        message.error("验证邮件重发失败", 3);
+        console.error(error);
+      } else {
+        message.success("验证邮件重发成功", 3);
+      }
+    });
+
+    intervalId = Meteor.setInterval(() => {
+      if (this.state.counter > 0) this.setState({counter: this.state.counter-1});
+    }, 1000);
+    this.setState({intervalId: intervalId});
+  },
+  componentWillUpdate() {
+    if (this.state.counter <= 1) { // attention! it's 1 instead of 0
+      Meteor.clearInterval(this.state.intervalId);
+      this.setState({counter: TIME_OUT, intervalId: null});
+    }
+  },
+  render() {
+    return (
+      <Row>
+        <Col span={1}>邮箱：</Col>
+        <Col span={12}>
+          { this.props.currentUser ? this.props.currentUser.emails[0].address + (this.props.currentUser.emails[0].verified ? "(已验证)" : null) : null}
+          <br />
+          { this.props.currentUser && !this.props.currentUser.emails[0].verified ?
+            <span>
+              <Alert message="你的邮箱尚未激活，请查收邮件激活。激活后你就可以使用发帖，点评等功能啦。" type="warning" />
+              <Button type="primary" onClick={this.resendEmail} disabled={this.state.counter!=TIME_OUT}>{this.state.counter != TIME_OUT ? "再发一次("+this.state.counter+")" : "再发一次"}</Button>
+            </span>
+            : null
+          }
+        </Col>
+      </Row>
+    );
+  },
+});
+
 class UserSettings extends React.Component {
   render() {
     const activeTab = this.props.activeTab || 'profile';
@@ -135,7 +188,7 @@ class UserSettings extends React.Component {
         <div style={{padding: "0 50px"}}>
           <div style={{margin: '24px 0 0', position: 'relative', overflow: "hidden"}}>
             { activeTab == 'profile' ? <ProfileTab currentUser={this.props.currentUser} /> : null  }
-            { activeTab == 'account' ? <div></div> : null }
+            { activeTab == 'account' ? <AccountTab currentUser={this.props.currentUser} /> : null  }
             { activeTab == 'profile' ? <div></div> : null }
             { activeTab == 'notifications' ? <div></div> : null }
           </div>
