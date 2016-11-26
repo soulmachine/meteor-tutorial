@@ -14,6 +14,18 @@ Accounts.emailTemplates.enrollAccount.text = function (user, url) {
     + url;
 };
 
+// Verification email
+Accounts.emailTemplates.verifyEmail.from = function() {
+  return "AwesomeSite Admin <admin@example.com>";
+}
+Accounts.emailTemplates.verifyEmail.subject = function (user) {
+  return "Please verify your email, " + user.username;
+};
+Accounts.emailTemplates.verifyEmail.text = function (user, url) {
+  url = url.replace('#/', '');
+  return "Hello " + user.username + ",\n\nTo verify your email, simply click the link below.\n\n" + url + "\n\nThanks.";
+};
+
 // Reset password E-mail
 Accounts.emailTemplates.resetPassword.from = function() {
   return "AwesomeSite Admin <no-replay@example.com>";
