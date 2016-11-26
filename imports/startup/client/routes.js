@@ -51,10 +51,10 @@ loggedInRoutes.route("/settings", {
   name: 'settings'
 });
 
-loggedInRoutes.route("/settings/:subnav", {
+loggedInRoutes.route("/settings/:activeTab", {
   action(params, queryParams) {
     mount(MainLayout, {
-      children: (<UserSettings subnav={params.subnav}/>)
+      children: (<UserSettings activeTab={params.activeTab}/>)
     });
   },
   name: 'settings'
