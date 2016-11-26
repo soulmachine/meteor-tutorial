@@ -71,7 +71,7 @@ const ProfileTab = Form.create()(React.createClass({
             console.log(error);
           } else {
             this.setState({updateFailed: false});
-            message.success("更新成功！");
+            message.success("更新成功！", 3);
           }
         });
       }
@@ -120,6 +120,119 @@ const ProfileTab = Form.create()(React.createClass({
   },
 }));
 
+const ChangePasswordForm = Form.create()(React.createClass({
+  getInitialState() {
+    return {
+      showChangePaswordForm: false,
+      passwordDirty: false,
+    };
+  },
+  handleSubmit(e) {
+    e.preventDefault();
+    this.setState({showChangePaswordForm: false});
+    this.props.form.validateFieldsAndScroll((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        Accounts.changePassword(values.old_password, values.password, (error) => {
+          if (error) {
+            message.error("旧密码不正确，密码更新失败", 3);
+            console.error(error);
+          } else {
+            message.success("密码更新成功", 3);
+          }
+        });
+      }
+    });
+  },
+  handlePasswordBlur(e) {
+    const value = e.target.value;
+    this.setState({ passwordDirty: this.state.passwordDirty || !!value });
+  },
+  checkPassowrd(rule, value, callback) {
+    const form = this.props.form;
+    if (value && value !== form.getFieldValue('password')) {
+      callback('两次输入的密码不一致！');
+    } else {
+      if (value && value == form.getFieldValue('old_password')) {
+        callback('新密码与旧密码一样');
+      } else {
+        callback();
+      }
+    }
+  },
+  checkConfirm(rule, value, callback) {
+    const form = this.props.form;
+    if (value && this.state.passwordDirty) {
+      form.validateFields(['confirm'], { force: true });
+    }
+    callback();
+  },
+  render() {
+    const { getFieldDecorator } = this.props.form;
+    const formItemLayout = {
+      labelCol: { span: 7 },
+      wrapperCol: { span: 14 },
+    };
+
+    if (this.state.showChangePaswordForm) {
+      return (
+        <Form horizontal onSubmit={this.handleSubmit} style={{maxWidth: 300}}>
+          <FormItem
+            {...formItemLayout}
+            label="旧密码"
+            hasFeedback
+          >
+            {getFieldDecorator('old_password', {
+              rules: [{
+                required: true, message: '请输入旧密码',
+              }],
+            })(
+              <Input type="password" />
+            )}
+          </FormItem>
+          <FormItem
+            {...formItemLayout}
+            label="新密码"
+            hasFeedback
+          >
+            {getFieldDecorator('password', {
+              rules: [{
+                required: true, message: '请输入密码',
+              }, {
+                validator: this.checkConfirm,
+              }],
+            })(
+              <Input type="password" onBlur={this.handlePasswordBlur} />
+            )}
+          </FormItem>
+          <FormItem
+            {...formItemLayout}
+            label="确认新密码"
+            hasFeedback
+          >
+            {getFieldDecorator('confirm', {
+              rules: [{
+                required: true, message: '请确认你的密码',
+              }, {
+                validator: this.checkPassowrd,
+              }],
+            })(
+              <Input type="password" />
+            )}
+          </FormItem>
+          <FormItem>
+            <Button type="primary" htmlType="submit">确定</Button>
+          </FormItem>
+        </Form>
+      );
+    } else {
+      return (
+        <a href="#" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
+      );
+    }
+  }
+}));
+
 const TIME_OUT = 60;  // seconds
 
 const AccountTab = React.createClass({
@@ -127,6 +240,7 @@ const AccountTab = React.createClass({
     return {
       counter: TIME_OUT,
       intervalId: null,
+      showChangePaswordForm: false,
     };
   },
   resendEmail() {
@@ -152,20 +266,26 @@ const AccountTab = React.createClass({
   },
   render() {
     return (
-      <Row>
-        <Col span={1}>邮箱：</Col>
-        <Col span={12}>
-          { this.props.currentUser ? this.props.currentUser.emails[0].address + (this.props.currentUser.emails[0].verified ? "(已验证)" : null) : null}
-          <br />
-          { this.props.currentUser && !this.props.currentUser.emails[0].verified ?
-            <span>
-              <Alert message="你的邮箱尚未激活，请查收邮件激活。激活后你就可以使用发帖，点评等功能啦。" type="warning" />
-              <Button type="primary" onClick={this.resendEmail} disabled={this.state.counter!=TIME_OUT}>{this.state.counter != TIME_OUT ? "再发一次("+this.state.counter+")" : "再发一次"}</Button>
-            </span>
-            : null
-          }
-        </Col>
-      </Row>
+      <div>
+        <Row>
+          <Col span={1}>邮箱：</Col>
+          <Col span={12}>
+            { this.props.currentUser ? this.props.currentUser.emails[0].address + (this.props.currentUser.emails[0].verified ? "(已验证)" : null) : null}
+            <br />
+            { this.props.currentUser && !this.props.currentUser.emails[0].verified ?
+              <span>
+                <Alert message="你的邮箱尚未激活，请查收邮件激活。激活后你就可以使用发帖，点评等功能啦。" type="warning" />
+                <Button type="primary" onClick={this.resendEmail} disabled={this.state.counter!=TIME_OUT}>{this.state.counter != TIME_OUT ? "再发一次("+this.state.counter+")" : "再发一次"}</Button>
+              </span>
+              : null
+            }
+          </Col>
+        </Row>
+        <Row>
+          <Col span={1}>密码：</Col>
+          <Col span={12}><ChangePasswordForm /></Col>
+        </Row>
+      </div>
     );
   },
 });

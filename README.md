@@ -990,6 +990,137 @@ const AccountTab = React.createClass({
 这个组件的基本功能就是判断邮箱是否已验证，没有的话就展示一个“重新发送”按钮，当用户点击之后，启动一个倒计时。
 
 
+## 账号和密码：修改密码
+
+本小节给“账号和密码”标签页添加修改密码的功能。
+
+在 `UserSettings.jsx` 中声明一个新的组件，
+
+```jsx
+const ChangePasswordForm = Form.create()(React.createClass({
+  getInitialState() {
+    return {
+      showChangePaswordForm: false,
+      passwordDirty: false,
+    };
+  },
+  handleSubmit(e) {
+    e.preventDefault();
+    this.setState({showChangePaswordForm: false});
+    this.props.form.validateFieldsAndScroll((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        Accounts.changePassword(values.old_password, values.password, (error) => {
+          if (error) {
+            message.error("旧密码不正确，密码更新失败", 3);
+            console.error(error);
+          } else {
+            message.success("密码更新成功", 3);
+          }
+        });
+      }
+    });
+  },
+  handlePasswordBlur(e) {
+    const value = e.target.value;
+    this.setState({ passwordDirty: this.state.passwordDirty || !!value });
+  },
+  checkPassowrd(rule, value, callback) {
+    const form = this.props.form;
+    if (value && value !== form.getFieldValue('password')) {
+      callback('两次输入的密码不一致！');
+    } else {
+      if (value && value == form.getFieldValue('old_password')) {
+        callback('新密码与旧密码一样');
+      } else {
+        callback();
+      }
+    }
+  },
+  checkConfirm(rule, value, callback) {
+    const form = this.props.form;
+    if (value && this.state.passwordDirty) {
+      form.validateFields(['confirm'], { force: true });
+    }
+    callback();
+  },
+  render() {
+    const { getFieldDecorator } = this.props.form;
+    const formItemLayout = {
+      labelCol: { span: 7 },
+      wrapperCol: { span: 14 },
+    };
+
+    if (this.state.showChangePaswordForm) {
+      return (
+        <Form horizontal onSubmit={this.handleSubmit} style={{maxWidth: 300}}>
+          <FormItem
+            {...formItemLayout}
+            label="旧密码"
+            hasFeedback
+          >
+            {getFieldDecorator('old_password', {
+              rules: [{
+                required: true, message: '请输入旧密码',
+              }],
+            })(
+              <Input type="password" />
+            )}
+          </FormItem>
+          <FormItem
+            {...formItemLayout}
+            label="新密码"
+            hasFeedback
+          >
+            {getFieldDecorator('password', {
+              rules: [{
+                required: true, message: '请输入密码',
+              }, {
+                validator: this.checkConfirm,
+              }],
+            })(
+              <Input type="password" onBlur={this.handlePasswordBlur} />
+            )}
+          </FormItem>
+          <FormItem
+            {...formItemLayout}
+            label="确认新密码"
+            hasFeedback
+          >
+            {getFieldDecorator('confirm', {
+              rules: [{
+                required: true, message: '请确认你的密码',
+              }, {
+                validator: this.checkPassowrd,
+              }],
+            })(
+              <Input type="password" />
+            )}
+          </FormItem>
+          <FormItem>
+            <Button type="primary" htmlType="submit">确定</Button>
+          </FormItem>
+        </Form>
+      );
+    } else {
+      return (
+        <a href="#" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
+      );
+    }
+  }
+}));
+```
+
+然后在 `AccountTab` 中新增一个Row，
+
+```jsx
+<Row>
+  <Col span={1}>密码：</Col>
+  <Col span={12}><ChangePasswordForm /></Col>
+</Row>
+```
+
+
 # 参考资料：
 
 * [Creating a Custom Login and Registration Form with Meteor - sitepoint](https://www.sitepoint.com/creating-custom-login-registration-form-with-meteor/)
