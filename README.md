@@ -427,6 +427,16 @@ else FlowRouter.redirect('/');
 Session.set('previous-url', undefined);
 ```
 
+Meteor 默认登录过期时间是 90 天，太长了，我们把它修改为7天，新建一个文件 `imports/startup/server/accounts-config.js`，内容如下，
+
+```javascript
+Accounts.config({
+  loginExpirationInDays: 7,
+});
+
+```
+并在`server/main.js`中引入。
+
 （可选）为了调试方便，我们可以安装这个包，<https://github.com/msavin/Mongol>, 这个包可以查看客户端数据库 minimongo 里的所有 Collection。
 
     meteor add msavin:mongol
@@ -580,7 +590,7 @@ const loggedInRoutes = FlowRouter.group({
 });
 ```
 
-以后所有需要保护起来的私密页面，都可以用这个 group，
+以后所有需要保护起来的私密页面，都可以继承自这个 group，
 
 ```javascript
 loggedInRoutes.route("/todo", {
