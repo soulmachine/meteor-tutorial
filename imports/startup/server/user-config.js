@@ -9,6 +9,12 @@ Meteor.publish(null, function () {
     fields: {
       birthyear: 1,
       gender: 1,
+      nickname: 1,
     }
   });
 }, { is_auto: true });
+
+// Deny all client-side updates to user documents
+Meteor.users.deny({
+  update() { return true; }
+});

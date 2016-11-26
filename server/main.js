@@ -1,5 +1,5 @@
 import '../imports/api/tasks.js';
 import '../imports/api/captcha.js';
-import '../imports/api/user_util.js';
+import '../imports/api/users.js';
 import '../imports/startup/server/email-config.js';
-import '../imports/startup/server/extra-fields.js';
+import '../imports/startup/server/user-config.js';

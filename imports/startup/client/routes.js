@@ -10,6 +10,7 @@ import LoginPage from '../../ui/pages/LoginPage';
 import SignupPage from '../../ui/pages/SignupPage';
 import ForgotPassword from '../../ui/components/ForgotPassword';
 import ResetPassword from '../../ui/components/ResetPassword';
+import UserSettings from '../../ui/components/UserSettings';
 
 
 const loggedInRoutes = FlowRouter.group({
@@ -39,6 +40,24 @@ loggedInRoutes.route("/todo", {
     });
   },
   name: 'todo'
+});
+
+loggedInRoutes.route("/settings", {
+  action() {
+    mount(MainLayout, {
+      children: (<UserSettings />)
+    });
+  },
+  name: 'settings'
+});
+
+loggedInRoutes.route("/settings/:subnav", {
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<UserSettings subnav={params.subnav}/>)
+    });
+  },
+  name: 'settings'
 });
 
 FlowRouter.notFound = {

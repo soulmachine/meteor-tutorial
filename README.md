@@ -14,6 +14,7 @@ Table of Contents
 1. [Step4: Flow Router](#step4-flow-router)
 1. [Step5: 设计布局](#step5-设计布局)
 1. [Step6: 注册和登录](#step6-注册和登录)
+1. [Step7: 用户设置](#step7-用户设置)
 
 
 # Step1: 新建一个工程
@@ -516,14 +517,14 @@ FlowRouter.route('/reset-password/:token', {
 
 第一步，修改 `Signup.jsx`，添加两个字段，性别`gender`和出生年份`birthday`，在 `handleSubmit()`中调用 `Accounts.createUser()`时，第四个参数设置为 `profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}`，更多细节请阅读该文件。
 
-第二步，新建一个文件 `imports/startup/server/extra-fields.js`并在 `server/main.js` 引入这个文件，该文件内容如下，
+第二步，新建一个文件 `imports/startup/server/user-config.js`并在 `server/main.js` 引入这个文件，该文件内容如下，
 
 ```javascript
 Accounts.onCreateUser(function(options, user) {
   return _.extend(user, {gender: options.profile.gender, birthyear: options.profile.birthyear});
 });
 ```
-注意，为了防止客户端添加任意字段，`onCreateUser()`千万不要写成下面这样：
+注意，`onCreateUser()`千万不要写成下面这样：
 
 ```javascript
 Accounts.onCreateUser(function(options, user) {
@@ -533,20 +534,11 @@ Accounts.onCreateUser(function(options, user) {
 
 前面那个`onCreateUser()`是正确的写法，即使客户端在 `profile` 里塞入任意字段，服务端还是只保存`gender`和 `birthyear`，把其他字段丢弃掉。
 
-为了防止客户端直接修改用户资料，可以在 `client/main.jsx` 中添加如下代码：
-
-```javascript
-// Deny all client-side updates to user documents
-Meteor.users.deny({
-  update() { return true; }
-});
-```
-
 在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户多了两个字段 `gender`和 `birthyear`，大功告成！
 
 不过按`Ctrl+M`调出Mongol，发现客户端只能看到很有限的几个字段，看不到 `gender`和 `birthyear`，怎么把一个user的其它字段也发布到客户端呢？通过 publish/subscrib 机制，首先在服务端 publish, 然后在客户端 subscribe。
 
-在 `imports/startup/server/extra-fields.js` 中，添加如下代码：
+在 `imports/startup/server/user-config.js` 中，添加如下代码：
 
 ```javascript
 Meteor.publish(null, function () {
@@ -561,6 +553,8 @@ Meteor.publish(null, function () {
   });
 }, { is_auto: true });
 ```
+
+上面的代码开放了三个字段给客户端，同时，把publish 的名字设置为 `null`，就会变成 autopublish。
 
 按`Ctrl+M`调出Mongol，可以看到 `gender`和 `birthyear` 字段了！
 
@@ -596,6 +590,223 @@ loggedInRoutes.route("/todo", {
   name: 'todo'
 });
 ```
+
+
+# Step7: 用户设置
+
+这一节主要实现用户设置的各种功能，例如基本资料、验证邮箱，修改密码等。
+
+## 基本资料页面
+
+首先在 `routes.js` 中添加一条路由规则，
+
+```javascript
+import UserSettings from '../../ui/components/UserSettings';
+
+loggedInRoutes.route("/settings", {
+  action() {
+    mount(MainLayout, {
+      children: (<UserSettings />)
+    });
+  },
+  name: 'settings'
+});
+```
+
+然后新建一个组件，`imports/ui/components/UserSettings.jsx`, 布局采用顶部二级导航。
+
+看了下知乎和GitHub的二级导航，URL都是 `/settings/xxx` 的格式，这里也采用这种格式，因此给 `UserSettings` 增加一个属性 `subnav`，并修改路由规则，
+
+```javascript
+import UserSettings from '../../ui/components/UserSettings';
+
+loggedInRoutes.route("/settings", {
+  action() {
+    mount(MainLayout, {
+      children: (<UserSettings />)
+    });
+  },
+  name: 'settings'
+});
+
+loggedInRoutes.route("/settings/:subnav", {
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<UserSettings subnav={params.subnav}/>)
+    });
+  },
+  name: 'settings'
+});
+```
+
+接下来创建组件 `UserSettings.jsx`，首先在里面声明一个 `ProfileTab` 组件，这个组件对应的是 `/settings/profile` 这个URL，
+
+```jsx
+const ProfileTab = Form.create()(React.createClass({
+  getInitialState() {
+    return {
+      updateFailed: false,
+      isFirst: true,
+    };
+  },
+  componentWillReceiveProps(nextProps){
+    if (this.state.isFirst && nextProps.currentUser && nextProps.currentUser.nickname) {
+      nextProps.form.setFieldsValue({nickname: nextProps.currentUser.nickname});
+      this.setState({isFirst: false});
+    }
+  },
+  checkNickname(rule, value, callback) {
+    console.log(value);
+    if (value) {
+      if (value !== this.props.currentUser.nickname) {
+        callback();
+      } else {
+        callback('昵称没有变化');
+      }
+    } else {
+      callback('昵称为空');
+    }
+  },
+  handleSubmit(e) {
+    e.preventDefault();
+    this.setState({updateFailed: false});
+    this.props.form.validateFields((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        Meteor.users.update(Meteor.userId(), {$set: {nickname: values.nickname}}, (error) => {
+          if (error) {
+            this.setState({updateFailed: true});
+            console.log(error);
+          } else {
+            this.setState({updateFailed: false});
+            message.success("更新成功！");
+          }
+        });
+      }
+    });
+  },
+  render() {
+    const { getFieldDecorator } = this.props.form;
+
+    return (
+      <Form onSubmit={this.handleSubmit} style={styles.loginForm}>
+        <FormItem
+          {...formItemLayout}
+          label="用户名"
+        >
+          <Input disabled value={this.props.currentUser ? this.props.currentUser.username : null } />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="个性域名"
+        >
+          <span>{"https://www.example.com/user/" + (this.props.currentUser ? this.props.currentUser.username : '') }</span>
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="昵称"
+        >
+          {getFieldDecorator('nickname', {
+            rules: [{
+              validator: this.checkNickname,
+            }],
+          })(
+            <Input />
+          )}
+        </FormItem>
+        <FormItem>
+          <Button type="primary" htmlType="submit">
+            保存
+          </Button>
+        </FormItem>
+        { this.state.updateFailed ?
+          <Alert message="保存失败" type="error"/>
+          : null
+        }
+      </Form>
+    );
+  },
+}));
+```
+
+这个组件有几个地方需要注意：
+
+* `componentWillReceiveProps(nextProps)` 这段代码，这段代码主要是为了给 nickname 的输入框设置初始值。如果不使用 `isFirst`，会造成死循环
+* `checkNickname()`用于给出更友好的提示，当用户输入的新昵称跟原昵称一样时，禁止保存
+
+当前 `ProfileTab`中，更新昵称用的这行代码，
+
+```javascript
+Meteor.users.update(Meteor.userId(), {$set: {nickname: values.nickname}});
+```
+
+这行代码是直接在客户端修改数据库中的数据，有很大的隐患，例如，可以打开 Chrome 的 Developer Tools, 在 Console 中输入下面的的代码直接更新数据库：
+
+```javascript
+Meteor.users.update(Meteor.userId(), {$set: {username: 'god'}});
+```
+
+竟然直接修改了 username, 绕过了网页上的表单检测，甚至可以跟其他用户名重名！。 这是因为Meteor 默认客户端可以直接修改数据库。这是非常危险的，比如用户给自己增加积分、金币等，如何避免呢？
+
+官方文档 <https://guide.meteor.com/security.html> 这里说了, 要想做到安全，必须要禁止客户端直接修改数据库的操作，所有的数据更新操作都要通过服务端的方法，
+
+> Given the points above, we recommend that all Meteor apps should use Methods to accept data input from the client, and restrict the arguments accepted by each Method as tightly as possible.
+
+首先，为了禁止客户端直接修改数据库，先删除  `user-config.js` 里的 `Meteor.users.allow()`，然后添加如下代码，
+
+```javascript
+// Deny all client-side updates to user documents
+Meteor.users.deny({
+  update() { return true; }
+});
+```
+
+别忘了 `server/main.js` 中 import 这个文件。
+
+接下来，所有的数据更新操作都需要通过服务端方法，在文件 `imports/api/users.js`中添加几个新 API，代码如下，
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+
+if (Meteor.isServer) {
+  Meteor.methods({
+    'usernameExists'(username) {
+      return (Meteor.users.findOne({username: username})) ? true : false;
+    },
+    'emailExists' (email) {
+      return Meteor.users.find({"emails.address": email}, {limit: 1}).count() > 0;
+    },
+    'user.updateNickname' (nickname) {
+      Meteor.users.update(Meteor.userId(), {$set: {nickname: nickname}});
+    }
+  });
+}
+```
+
+然后，将组件 `ProfileTab.jsx` 中的更新昵称代码改为：
+
+```jsx
+  handleSubmit(e) {
+    e.preventDefault();
+    this.setState({updateFailed: false});
+    this.props.form.validateFields((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        Meteor.call('user.updateNickname', values.nickname, (error, result) => {
+          if (error) {
+            this.setState({updateFailed: true});
+            console.log(error);
+          } else {
+            this.setState({updateFailed: false});
+            message.success("更新成功！");
+          }
+        });
+      }
+    });
+  },
+```
+
+即用 `Meteor.call('user.updateNickname', values.nickname)` 替换了原来的 `Meteor.users.update(Meteor.userId(), {$set: {nickname: values.nickname}})` 。
 
 
 # 参考资料：

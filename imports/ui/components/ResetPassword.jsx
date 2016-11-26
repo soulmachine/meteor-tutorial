@@ -26,24 +26,14 @@ class ResetPassword extends React.Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
-          if(error){
-            console.log("Captcha verification failed with error: ", error);
+        Accounts.resetPassword(this.props.token, values.password, (error) => {
+          if (error) {
+            this.setState({updateFailed: true});
+            console.log('Password Reset Error: ', error);
           } else {
-            if (result) {
-              Accounts.resetPassword(this.props.token, values.password, (error) => {
-                if (error) {
-                  this.setState({updateFailed: true});
-                  console.log('Password Reset Error: ', error);
-                } else {
-                  message.success('密码更新成功！');
-                  console.log('Password updated successfully!');
-                  FlowRouter.redirect('/');
-                }
-              });
-            } else {
-              console.log("Captcha verification failed");
-            }
+            message.success('密码更新成功！');
+            console.log('Password updated successfully!');
+            FlowRouter.redirect('/');
           }
         });
       }
