@@ -3,7 +3,9 @@
 Meteor 入门教程。如何运行？
 
     meteor npm install
-    meteor --settings settings.json
+    MAIL_URL="smtp://postmaster%40sandbox2cccd60b3908468faf6c2bfdda0d6ee3.mailgun.org:667bbb3a8e05f882f2599ed1c3c817f4@smtp.mailgun.org:587" meteor  --settings settings.json
+
+你需要设置一个`MAIL_URL` 环境变量，用于发送注册激活邮件，密码重置邮件等等，这里我用了Mailgun 作为例子，其他邮件发送商，例如 AWS SES 也是可以的。
 
 
 Table of Contents
@@ -629,10 +631,10 @@ loggedInRoutes.route("/settings", {
   name: 'settings'
 });
 
-loggedInRoutes.route("/settings/:subnav", {
+loggedInRoutes.route("/settings/:activeTab", {
   action(params, queryParams) {
     mount(MainLayout, {
-      children: (<UserSettings subnav={params.subnav}/>)
+      children: (<UserSettings activeTab={params.activeTab}/>)
     });
   },
   name: 'settings'

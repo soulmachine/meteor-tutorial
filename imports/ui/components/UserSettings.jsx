@@ -119,13 +119,13 @@ const ProfileTab = Form.create()(React.createClass({
 
 class UserSettings extends React.Component {
   render() {
-    const subNav = this.props.subnav || 'profile';
+    const activeTab = this.props.activeTab || 'profile';
 
     return (
       <div>
         <div style={{height: '48px', borderBottom: "1px solid #e9e9e9", background: "#fff"}}>
           <div style={{padding: '0 50px'}}>
-            <Menu mode="horizontal" selectedKeys={['settings/' + subNav]} style={{marginLeft: 124}}>
+            <Menu mode="horizontal" selectedKeys={['settings/' + activeTab]} style={{marginLeft: 124}}>
               <Menu.Item key="settings/profile"><a href="/settings/profile">基本资料</a></Menu.Item>
             <Menu.Item key="settings/account"><a href="/settings/account">账号和密码</a></Menu.Item>
               <Menu.Item key="settings/notifications"><a href="/settings/notifications">消息和通知</a></Menu.Item>
@@ -134,10 +134,10 @@ class UserSettings extends React.Component {
         </div>
         <div style={{padding: "0 50px"}}>
           <div style={{margin: '24px 0 0', position: 'relative', overflow: "hidden"}}>
-            { this.props.subnav == 'profile' ? <ProfileTab currentUser={this.props.currentUser} /> : null  }
-            { subNav == 'account' ? <div></div> : null }
-            { subNav == 'profile' ? <div></div> : null }
-            { subNav == 'notifications' ? <div></div> : null }
+            { activeTab == 'profile' ? <ProfileTab currentUser={this.props.currentUser} /> : null  }
+            { activeTab == 'account' ? <div></div> : null }
+            { activeTab == 'profile' ? <div></div> : null }
+            { activeTab == 'notifications' ? <div></div> : null }
           </div>
         </div>
       </div>
