@@ -89,7 +89,7 @@ const ProfileTab = Form.create()(React.createClass({
           {...formItemLayout}
           label="个性域名"
         >
-          <span>{"https://www.example.com/user/" + (this.props.currentUser ? this.props.currentUser.username : '') }</span>
+          <span>{"https://www.example.com/people/" + (this.props.currentUser ? this.props.currentUser.username : '') }</span>
         </FormItem>
         <FormItem
           {...formItemLayout}
