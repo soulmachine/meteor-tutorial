@@ -36,7 +36,7 @@ class Login extends React.Component {
               Meteor.loginWithPassword(values.username, values.password, (error) => {
                 if (error) this.setState({loginFailed: true, failedReason: '用户名或密码错误'});
                 else {
-                  message.success("登录成功！");
+                  message.success("登录成功！", 3);
                   const previous = Session.get('previous-url');
                   if (previous) FlowRouter.redirect(Session.get('previous-url'));
                   else FlowRouter.redirect('/');

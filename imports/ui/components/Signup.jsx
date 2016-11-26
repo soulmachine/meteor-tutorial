@@ -1,4 +1,6 @@
 import React from 'react';
+import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
 
 import 'antd/dist/antd.css';
 import Alert from 'antd/lib/alert';
@@ -49,7 +51,7 @@ class Signup extends React.Component {
               }, (error) => {
                 if (error) console.log('Signup failed with error: ', error);
                 else {
-                  message.success("注册成功！");
+                  message.success("注册成功，请查收邮件激活账户", 3);
                   const previous = Session.get('previous-url');
                   if (previous) FlowRouter.redirect(Session.get('previous-url'));
                   else FlowRouter.redirect('/');

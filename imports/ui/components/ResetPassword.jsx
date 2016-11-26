@@ -1,5 +1,5 @@
 import React from 'react';
-import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
 
 import 'antd/dist/antd.css';
 import Alert from 'antd/lib/alert';
@@ -31,7 +31,7 @@ class ResetPassword extends React.Component {
             this.setState({updateFailed: true});
             console.log('Password Reset Error: ', error);
           } else {
-            message.success('密码更新成功！');
+            message.success('密码更新成功！', 3);
             console.log('Password updated successfully!');
             FlowRouter.redirect('/');
           }

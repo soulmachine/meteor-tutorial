@@ -1,5 +1,6 @@
 import React from 'react';
 import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
 
 import 'antd/dist/antd.css';
 import Alert from 'antd/lib/alert';
