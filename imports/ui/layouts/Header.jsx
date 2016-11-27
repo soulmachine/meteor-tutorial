@@ -70,16 +70,15 @@ const SearchInput = React.createClass({
 });
 
 const NotificationBadge = createContainer(() => {
-  Meteor.subscribe('notifications', 0);
-
+  Meteor.subscribe('notification-unread-count');
   return {
-    notifications: Notifications.find().fetch(),
-  };
+    unreadCount: Counter.get("notification-unread-count"),
+  }
 }, React.createClass({
   render() {
     return (
       <a href="/notifications">
-        <Badge count={Counts.get("notifications-counter")}>
+        <Badge count={this.props.unreadCount}>
           消息
         </Badge>
       </a>

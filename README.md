@@ -1126,26 +1126,25 @@ const ChangePasswordForm = Form.create()(React.createClass({
 
 ## 未读消息数
 
-未读消息数，这个整数需要做成 reactive 的，这样就能实时展示未读消息数。如果调用 `Meteor.methods()` 里面定义的方法，虽然可以得到未读消息数，但这个整数不是 reactive的。为了做到 reactive, 我们需要这个包[publish-counts](https://github.com/percolatestudio/publish-counts/)，
+未读消息数，这个整数需要做成 reactive 的，这样就能实时展示未读消息数。如果调用 `Meteor.methods()` 里面定义的方法，虽然可以得到未读消息数，但这个整数不是 reactive的。
 
-    meteor add tmeasday:publish-counts
+GitHub上已经有一些包，例如[publish-counts](https://github.com/percolatestudio/publish-counts/)和[publish-performant-counts](https://github.com/nate-strauser/meteor-publish-performant-counts/)，可以做这个reactive的计数器。这里我们选择 `publish-performant-counts`，它没有`publish-counts`实时，只是每10秒查询一次服务器，但是性能好，实时性也够用了，
 
-首先来实现右上角的未读消息数目的组件，这个组件依赖了
+    meteor add natestrauser:publish-performant-counts
 
 在 `Header.jsx` 里声明一个新组件，名字为 `NotificationBadge`，
 
 ```jsx
 const NotificationBadge = createContainer(() => {
-  Meteor.subscribe('notifications', 0);
-
+  Meteor.subscribe('notification-unread-count');
   return {
-    notifications: Notifications.find().fetch(),
-  };
+    unreadCount: Counter.get("notification-unread-count"),
+  }
 }, React.createClass({
   render() {
     return (
       <a href="/notifications">
-        <Badge count={Counts.get("notifications-counter")}>
+        <Badge count={this.props.unreadCount}>
           消息
         </Badge>
       </a>
@@ -1154,7 +1153,7 @@ const NotificationBadge = createContainer(() => {
 }));
 ```
 
-这个组件订阅了 `notifications`，所以我们需要在服务端定发布 `notifications`，新建一个文件，`imports/api/notifications.js`并在 `server/main.js`中引入,
+这个组件订阅了 `notification-unread-count`，所以我们需要在服务端定发布它，，新建一个文件，imports/api/notifications.js`并在 `server/main.js`中引入,
 
 ```javascript
 import { Meteor } from 'meteor/meteor';
@@ -1163,25 +1162,16 @@ import { Mongo } from 'meteor/mongo';
 export const Notifications = new Mongo.Collection('notifications');
 
 if (Meteor.isServer) {
-  Meteor.publish('notifications', function(skipCount) {
-    Counts.publish(this, 'notifications-counter',
-      Notifications.find({owner: this.userId, isRead: { $ne: true }}),
-      { noReady: true}
-    );
-    return Notifications.find({owner: this.userId},
-      {sort: {createdAt : -1}, skip: skipCount, limit: parseInt(Meteor.settings.public.recordsPerPage) });
+  Meteor.publish('notification-unread-count', function() {
+    return new Counter('notification-unread-count', Notifications.find({owner: this.userId, isRead: { $ne: true }}));
   });
 }
 ```
 
-上面的代码不仅发布了 `notifications` 这个 collection，还发布了一个 `notifications-counter` 计数器，这样当客户端组件订阅了`notifications`，就可以在客户端代码里用 `Counts.get("notifications-counter")` 来获得未读消息数。
-
-同时，上面的代码还实现了分页。用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。
-
 接下来做一个实验，运行命令 `meteor mongo` 启动一个MongoDB Shell, 注意要让浏览器和你的命令行并排摆放，这样你可以同时看见浏览器和命令行。在命令行里面输入如下命令，插入一条数据，
 
 ```javascript
-db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE", action: "评价了你的帖子", title: "深度学习开发环境配置：Ubuntu1 6.04+Nvidia GTX 1080+CUDA 8.0", link: "https://zhuanlan.zhihu.com/p/22635699", createdAt: new Date() });
+db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE", action: "评价了你的帖子", title: "深度学习开发环境配置：Ubuntu 16.04+Nvidia GTX 1080+CUDA 8.0", link: "https://zhuanlan.zhihu.com/p/22635699", createdAt: new Date() });
 ```
 
 你可以看到浏览器立刻有了变化，右上角的徽标变成了红色，里面有一个数字1，重复插入多条数据，这个整数会实时变化😁

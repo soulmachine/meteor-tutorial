@@ -54,6 +54,7 @@ modules-runtime@0.7.7
 mongo@1.1.14
 mongo-id@1.0.6
 msavin:mongol@2.0.1
+natestrauser:publish-performant-counts@0.1.2
 npm-bcrypt@0.9.2
 npm-mongo@2.2.11_2
 observe-sequence@1.0.14
@@ -86,7 +87,6 @@ templating-compiler@1.2.15
 templating-runtime@1.2.15
 templating-tools@1.0.5
 tmeasday:check-npm-versions@0.3.1
-tmeasday:publish-counts@0.8.0
 tmeasday:test-reporter-helpers@0.2.1
 tracker@1.1.1
 ui@1.0.12
