@@ -1,3 +1,4 @@
+import '../imports/api/notifications.js';
 import '../imports/api/tasks.js';
 import '../imports/api/accounts.js';
 import '../imports/api/captcha.js';

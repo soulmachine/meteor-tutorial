@@ -2,8 +2,12 @@ import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 
+import { Notifications } from '../../api/notifications.js';
+
 import enquire from 'enquire.js';
 
+import 'antd/dist/antd.css';
+import Badge from 'antd/lib/badge';
 import Menu from 'antd/lib/menu';
 import Row from 'antd/lib/row';
 import Col from 'antd/lib/col';
@@ -11,8 +15,6 @@ import Icon from 'antd/lib/icon';
 import Button from 'antd/lib/button';
 import Popover from 'antd/lib/popover';
 import Input from 'antd/lib/input';
-
-import 'antd/dist/antd.css';
 
 
 import classNames from 'classnames';
@@ -67,6 +69,25 @@ const SearchInput = React.createClass({
   },
 });
 
+const NotificationBadge = createContainer(() => {
+  Meteor.subscribe('notifications', 0);
+
+  return {
+    notifications: Notifications.find().fetch(),
+  };
+}, React.createClass({
+  render() {
+    return (
+      <a href="/notifications">
+        <Badge count={Counts.get("notifications-counter")}>
+          消息
+        </Badge>
+      </a>
+    );
+  },
+}));
+
+
 class Header extends React.Component {
   constructor(props) {
     super(props);
@@ -106,9 +127,12 @@ class Header extends React.Component {
           <Menu.Item key="todo">
             <a href="/todo">Todo</a>
           </Menu.Item>
+          <Menu.Item key="notifications">
+            <NotificationBadge />
+          </Menu.Item>
           <SubMenu title={<span><Icon type="user"/>{this.props.currentUser.username}</span>} id="navsubmenu">
-            <Menu.Item key="user">
-              <a href={'/user/' + this.props.currentUser.username}>我的主页</a>
+            <Menu.Item key="people">
+              <a href={'/people/' + this.props.currentUser.username}>我的主页</a>
             </Menu.Item>
             <Menu.Item key="inbox">
               <a href='/inbox'>私信</a>

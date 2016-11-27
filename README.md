@@ -17,6 +17,7 @@ Table of Contents
 1. [Step5: 设计布局](#step5-设计布局)
 1. [Step6: 注册和登录](#step6-注册和登录)
 1. [Step7: 用户设置](#step7-用户设置)
+1. [Step8: 消息通知](#step8-消息通知)
 
 
 # Step1: 新建一个工程
@@ -1118,6 +1119,66 @@ const ChangePasswordForm = Form.create()(React.createClass({
 ```
 
 
+# Step8: 消息通知
+
+消息通知基本是每个网站的标配，例如有人给我的的帖子回复了，或点赞了，都需要网站在右上角显示一个红圈圈的数字来通知我。本节将实现一个消息通知组件。
+
+
+## 未读消息数
+
+未读消息数，这个整数需要做成 reactive 的，这样就能实时展示未读消息数。如果调用 `Meteor.methods()` 里面定义的方法，虽然可以得到未读消息数，但这个整数不是 reactive的。为了做到 reactive, 我们需要这个包[publish-counts](https://github.com/percolatestudio/publish-counts/)，
+
+    meteor add tmeasday:publish-counts
+
+首先来实现右上角的未读消息数目的组件，这个组件依赖了
+
+在 `Header.jsx` 里声明一个新组件，名字为 `NotificationBadge`，
+
+```jsx
+const NotificationBadge = createContainer(() => {
+  Meteor.subscribe('notifications', 0);
+
+  return {
+    notifications: Notifications.find().fetch(),
+  };
+}, React.createClass({
+  render() {
+    return (
+      <a href="/notifications">
+        <Badge count={Counts.get("notifications-counter")}>
+          消息
+        </Badge>
+      </a>
+    );
+  },
+}));
+```
+
+这个组件订阅了 `notifications`，所以我们需要在服务端定发布 `notifications`，新建一个文件，`imports/api/notifications.js`并在 `server/main.js`中引入,
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
+
+export const Notifications = new Mongo.Collection('notifications');
+
+if (Meteor.isServer) {
+  Meteor.publish('notifications', function(skipCount) {
+    Counts.publish(this, 'notifications-counter',
+      Notifications.find({owner: this.userId, isRead: { $ne: true }}),
+      { noReady: true}
+    );
+    return Notifications.find({owner: this.userId},
+      {sort: {createdAt : -1}, skip: skipCount, limit: parseInt(Meteor.settings.public.recordsPerPage) });
+  });
+}
+```
+
+上面的代码不仅发布了 `notifications` 这个 collection，还发布了一个 `notifications-counter` 计数器，这样当客户端组件订阅了`notifications`，就可以在客户端代码里用 `Counts.get("notifications-counter")` 来获得未读消息数。
+
+同时，上面的代码还实现了分页。用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。
+
+
 # 参考资料：
 
 * [Creating a Custom Login and Registration Form with Meteor - sitepoint](https://www.sitepoint.com/creating-custom-login-registration-form-with-meteor/)
@@ -1129,4 +1190,5 @@ const ChangePasswordForm = Form.create()(React.createClass({
 * [Extending Meteor.users - Medium](https://medium.com/all-about-meteorjs/extending-meteor-users-300a6cb8e17f)
 * [Guide: how to use Flow Router for authentication and permissions in the route layer](https://crater.io/posts/CsR7ChkDiHEWfhkHn/guide-how-to-use-flow-router-for-authentication-and)
 * [Meteor: Using Flow Router for authentication and permissions](https://medium.com/@satyavh/using-flow-router-for-authentication-ba7bb2644f42#.xw8wfl3yg)
+* [Paging and Sorting in Meteor - Part 1](http://experimentsinmeteor.com/paging-and-sorting-part-1/)
 
