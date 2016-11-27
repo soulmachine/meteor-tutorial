@@ -6,7 +6,7 @@ if (Meteor.isServer) {
       return (Meteor.users.findOne({username: username})) ? true : false;
     },
     'emailExists' (email) {
-      return Meteor.users.find({"emails.address": email}, {limit: 1}).count() > 0;
+      return (Meteor.users.findOne({"emails.address": email})) ? true : false;
     },
     'user.updateNickname' (nickname) {
       Meteor.users.update(Meteor.userId(), {$set: {nickname: nickname}});
