@@ -1,6 +1,7 @@
 {
   "reCAPTCHASecretKey": "your secretkey",
   "public": {
-    "reCAPTCHASiteKey": "your sitekey"
+    "reCAPTCHASiteKey": "your sitekey",
+    "recordsPerPage": 20
   }
 }

@@ -12,6 +12,7 @@ import ForgotPassword from '../../ui/components/ForgotPassword';
 import ResetPassword from '../../ui/components/ResetPassword';
 import UserSettings from '../../ui/components/UserSettings';
 import VerifyEmail from '../../ui/components/VerifyEmail';
+import Notifications from '../../ui/components/Notifications';
 
 
 const loggedInRoutes = FlowRouter.group({
@@ -39,6 +40,15 @@ loggedInRoutes.route("/todo", {
     });
   },
   name: 'todo'
+});
+
+loggedInRoutes.route("/notifications/:page?", {
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<Notifications page={params.page} />)
+    });
+  },
+  name: 'notifications'
 });
 
 loggedInRoutes.route("/settings/:activeTab?", {

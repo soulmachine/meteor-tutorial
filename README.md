@@ -1153,7 +1153,7 @@ const NotificationBadge = createContainer(() => {
 }));
 ```
 
-这个组件订阅了 `notification-unread-count`，所以我们需要在服务端定发布它，，新建一个文件，imports/api/notifications.js`并在 `server/main.js`中引入,
+这个组件订阅了 `notification-unread-count`，所以我们需要在服务端定发布它，，新建一个文件，`imports/api/notifications.js`并在 `server/main.js`中引入,
 
 ```javascript
 import { Meteor } from 'meteor/meteor';
@@ -1175,6 +1175,140 @@ db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE
 ```
 
 你可以看到浏览器立刻有了变化，右上角的徽标变成了红色，里面有一个数字1，重复插入多条数据，这个整数会实时变化😁
+
+
+## 消息组件
+
+接下来我们要实现一个页面，用来展示用户收到的所有消息。
+
+先在`imports/startup/client/routes.js` 中添加一条路由规则，
+
+```javascript
+import Notifications from '../../ui/components/Notifications';
+
+loggedInRoutes.route("/notifications/:page?", {
+  action(params, queryParams) {
+    mount(MainLayout, {
+      children: (<Notifications page={params.page} />)
+    });
+  },
+  name: 'notifications'
+});
+```
+
+`page`参数是用来分页的。随着时间推移，用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。
+
+在`imports/api/notifications.js` 中添加如下代码，
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
+
+export const Notifications = new Mongo.Collection('notifications');
+
+if (Meteor.isServer) {
+  Meteor.publish('notifications', function(skipCount) {
+    console.log("skipCount: ", skipCount);
+    return Notifications.find({owner: this.userId},
+      {sort: {createdAt : -1}, skip: skipCount, limit: parseInt(Meteor.settings.public.recordsPerPage)});
+  });
+
+  Meteor.publish('notification-unread-count', function() {
+    return new Counter('notification-unread-count', Notifications.find({owner: this.userId, isRead: { $ne: true }}));
+  });
+  Meteor.publish('notification-total-count', function() {
+    return new Counter('notification-total-count', Notifications.find({owner: this.userId}));
+  });
+}
+
+Meteor.methods({
+  'notification.markAsRead'(id) {
+    const notification = Notifications.findOne(id);
+    if (notification.owner !== this.userId) {
+      // If the task is private, make sure only the owner can delete it
+      throw new Meteor.Error('not-authorized');
+    }
+
+    Notifications.update(id, { $set: { isRead: true } });
+  },
+});
+
+```
+
+主要是增加了3个东西，
+
+1. 发布 `notifications`，便于客户端 subscribe
+1. 发布了一个计数器`notification-total-count`，分页时需要用到
+1. `notification.markAsRead`函数，当用户点击了某个消息，就把它标记为已读
+
+接下来是实现这个组件，`imports/ui/components/Notifications.jsx`,
+
+```jsx
+import React from 'react';
+import { Meteor } from 'meteor/meteor';
+import { createContainer } from 'meteor/react-meteor-data';
+
+import 'antd/dist/antd.css';
+import Col from 'antd/lib/col';
+import Row from 'antd/lib/row';
+import Pagination from 'antd/lib/pagination';
+
+
+class Notifications extends React.Component {
+  onChange(page) {
+    FlowRouter.go("/notifications/" + page);
+  }
+  clickMessage(id) {
+    console.log(id);
+    Meteor.call('notification.markAsRead', id, (error, result) => {
+      if(error){
+        console.log("notification.markAsRead failed with error: ", error);
+      } else {
+        console.log("notification.markAsRead succeeded");
+      }
+    });
+  }
+  render() {
+    console.log(this.props.page);
+    return (
+      <div style={{padding: "0 50px"}}>
+        <div style={{borderBottom: "1px solid #CCC", fontSize: 14, fontWeight: "bold", paddingBottom: 10}}>全部消息</div>
+        {this.props.notifications.map((notification, i) => {
+          const user = Meteor.users.findOne(notification.sender);
+          return (
+            <div key={"notification:" + i} style={{borderBottom: "1px dashed #CCC", padding: 8, fontWeight: notification.isRead ? "normal" : "bold"}} onClick={this.clickMessage.bind(this, notification._id)}>
+              <a href={"/people/" + user.username}>{user.username}</a>{notification.action}<a href={notification.link}>{notification.title}</a>
+            </div>
+          );
+        })}
+        <Row style={{marginTop: 20}}>
+          <Col span={8} offset={9}>
+            <Pagination simple pageSize={Meteor.settings.public.recordsPerPage} current={this.props.page}
+                        onChange={this.onChange.bind(this)} total={this.props.totalCount} />
+          </Col>
+        </Row>
+      </div>
+    );
+  }
+}
+
+export default createContainer(({ page }) => {
+  const currentPage = parseInt(page) || 1;
+  const skipCount = (currentPage - 1) * Meteor.settings.public.recordsPerPage;
+  Meteor.subscribe('notifications', skipCount);
+  Meteor.subscribe('notification-total-count');
+
+  const { Notifications } = require('../../api/notifications.js');
+
+  return {
+    page: currentPage,
+    notifications: Notifications.find().fetch(),
+    totalCount: Counter.get("notification-total-count"),
+  };
+}, Notifications);
+```
+
+上述代码目前还有个问题，当翻页时`console.log()`会打印两边，说明组件渲染了两次，为什么了？ TBD
 
 
 # 参考资料：
