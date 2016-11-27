@@ -720,21 +720,12 @@ loggedInRoutes.route("/settings", {
 
 然后新建一个组件，`imports/ui/components/UserSettings.jsx`, 布局采用顶部二级导航。
 
-看了下知乎和GitHub的二级导航，URL都是 `/settings/xxx` 的格式，这里也采用这种格式，因此给 `UserSettings` 增加一个属性 `subnav`，并修改路由规则，
+看了下知乎和GitHub的二级导航，URL都是 `/settings/xxx` 的格式，这里也采用这种格式，因此给 `UserSettings` 增加一个属性 `activeTab`，并修改路由规则，
 
 ```javascript
 import UserSettings from '../../ui/components/UserSettings';
 
-loggedInRoutes.route("/settings", {
-  action() {
-    mount(MainLayout, {
-      children: (<UserSettings />)
-    });
-  },
-  name: 'settings'
-});
-
-loggedInRoutes.route("/settings/:activeTab", {
+loggedInRoutes.route("/settings/:activeTab?", {
   action(params, queryParams) {
     mount(MainLayout, {
       children: (<UserSettings activeTab={params.activeTab}/>)
@@ -742,6 +733,12 @@ loggedInRoutes.route("/settings/:activeTab", {
   },
   name: 'settings'
 });
+```
+
+这里用了一个问号，表示 `activeTab` 这个参数是可选的，当用户访问`/settings`的时候它是undefined, 那么在`UserSettings.jsx`里要设置一个默认值，
+
+```javascript
+const activeTab = this.props.activeTab || 'profile';
 ```
 
 接下来创建组件 `UserSettings.jsx`，首先在里面声明一个 `ProfileTab` 组件，这个组件对应的是 `/settings/profile` 这个URL，
@@ -914,9 +911,9 @@ if (Meteor.isServer) {
 即用 `Meteor.call('user.updateNickname', values.nickname)` 替换了原来的 `Meteor.users.update(Meteor.userId(), {$set: {nickname: values.nickname}})` 。
 
 
-## 账号和密码：发送验证邮件
+## 发送验证邮件
 
-这一小节将完成“账号和密码”标签页中的发送验证邮件功能。
+这一小节将实现“账号和密码”标签页中的发送验证邮件功能。
 
 `Accounts.sendVerificationEmail()` 只在服务端可用，因此我们需要把它包装成一个 Meteor method, 新建一个文件 `imports/api/accounts.js`,
 
@@ -990,7 +987,7 @@ const AccountTab = React.createClass({
 这个组件的基本功能就是判断邮箱是否已验证，没有的话就展示一个“重新发送”按钮，当用户点击之后，启动一个倒计时。
 
 
-## 账号和密码：修改密码
+## 修改密码
 
 本小节给“账号和密码”标签页添加修改密码的功能。
 
@@ -1104,7 +1101,7 @@ const ChangePasswordForm = Form.create()(React.createClass({
       );
     } else {
       return (
-        <a href="#" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
+        <a href="javascript:;" onClick={() => this.setState({showChangePaswordForm: true})}>修改密码</a>
       );
     }
   }

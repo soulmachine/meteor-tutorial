@@ -41,16 +41,7 @@ loggedInRoutes.route("/todo", {
   name: 'todo'
 });
 
-loggedInRoutes.route("/settings", {
-  action() {
-    mount(MainLayout, {
-      children: (<UserSettings />)
-    });
-  },
-  name: 'settings'
-});
-
-loggedInRoutes.route("/settings/:activeTab", {
+loggedInRoutes.route("/settings/:activeTab?", {
   action(params, queryParams) {
     mount(MainLayout, {
       children: (<UserSettings activeTab={params.activeTab}/>)
