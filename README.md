@@ -1178,6 +1178,14 @@ if (Meteor.isServer) {
 
 同时，上面的代码还实现了分页。用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。
 
+接下来做一个实验，运行命令 `meteor mongo` 启动一个MongoDB Shell, 注意要让浏览器和你的命令行并排摆放，这样你可以同时看见浏览器和命令行。在命令行里面输入如下命令，插入一条数据，
+
+```javascript
+db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE", action: "评价了你的帖子", title: "深度学习开发环境配置：Ubuntu1 6.04+Nvidia GTX 1080+CUDA 8.0", link: "https://zhuanlan.zhihu.com/p/22635699", createdAt: new Date() });
+```
+
+你可以看到浏览器立刻有了变化，右上角的徽标变成了红色，里面有一个数字1，重复插入多条数据，这个整数会实时变化😁
+
 
 # 参考资料：
 
