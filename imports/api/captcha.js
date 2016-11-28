@@ -1,18 +1,17 @@
 import { Meteor } from 'meteor/meteor';
 
 function verifyCaptcha(clientIP, response) {
-  var captcha_data = {
+  const captcha_data = {
     secret: Meteor.settings.reCAPTCHASecretKey,
     remoteip: clientIP,
     response: response
   };
 
-  var serialized_captcha_data =
+  const serialized_captcha_data =
     'secret=' + captcha_data.secret +
     '&remoteip=' + captcha_data.remoteip +
     '&response=' + captcha_data.response;
-  var captchaVerificationResult;
-  var success = false; // used to process response string
+  let captchaVerificationResult;
 
   try {
     captchaVerificationResult = HTTP.call("POST", "https://www.google.com/recaptcha/api/siteverify", {
@@ -41,13 +40,4 @@ function verifyCaptcha(clientIP, response) {
   return captchaVerificationResult;
 }
 
-Meteor.methods({
-  "verifyCaptcha": function(response) {
-    var verifyCaptchaResponse = verifyCaptcha(this.connection.clientAddress, response);
-    if (!verifyCaptchaResponse.success) {
-      console.log('Captcha verification failed! Responding with: ', verifyCaptchaResponse);
-    }
-    return verifyCaptchaResponse.success;
-  },
-});
-
+export default verifyCaptcha;

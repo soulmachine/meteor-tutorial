@@ -247,7 +247,7 @@ FlowRouter.notFound = {
 最后，修改 `client/main.jsx` 的内容如下：
 
 ```jsx
-import '../imports/startup/accounts-config.js';
+import '../imports/startup/both/accounts-config.js';
 import '../imports/startup/client/routes.js';
 ```
 
@@ -273,11 +273,31 @@ import '../imports/startup/client/routes.js';
 
 # Step6: 注册和登录
 
-## 验证码
-
 `accounts-ui`自带简单的界面，虽然在快速开发原型时很有用，但是最终你还是需要自己定制登录和注册界面，下面我们开始一步一步制作登录和注册界面。
 
-在注册和登录的时候，都需要一个验证码，我们选择 Google reCAPTCHA, GitHub这里有一个现成的React 组件，[react-recaptcha](https://github.com/appleboy/react-recaptcha)。
+* 注册，基本流程是，在客户端，通过表单填写各项数据，然后在客户端调用 `Accounts.createUser()`发起注册请求，最后在服务端通过 `Accounts.onCreateUser()`校验各项数据。
+* 登录，基本流程是，在客户端，通过表单填写用户名和密码，然后再客户端调用`Meteor.loginWithPassword()`发起登录请求，最后在服务端通过 `Accounts.validateLoginAttempt()`校验
+* 如果没有自定义的逻辑，比如不需要验证码，那么 `Accounts.onCreateUser()` 和 `Accounts.validateLoginAttempt()` 不用关心，直接忽略它们，使用默认的即可
+
+注册和登录界面，均需要展示验证码，一定要注意，验证码的校验过程一定要嵌入 `Accounts.onCreateUser()` 和 `Accounts.validateLoginAttempt()`，不要分开成一个单独的网络请求，否则黑客可以单独直接调用`Accounts.createUser()`和 `Meteor.loginWithPassword()`，跳过验证码环节。
+
+做个实验，在 Chrome 的Console 下直接输入，
+
+```javascript
+Accounts.createUser({
+  username: "soulmachine",
+  email: "soulmachine@gmail.com",
+  password: "123456",
+  profile: { gender: "male", birthyear: 1985, invitation_token: "xxxxx", inviter: "god" }
+});
+```
+
+然后用 MongoDB Compass 连接数据库，竟然成功创建了新用户！所以，一定要在 `Accounts.onCreateUser()` 内加入验证码校验。
+
+
+## 验证码
+
+既然验证码是注册和登录都需要的，我们先实现这个功能。验证码服务这里选择Google reCAPTCHA（当然也可以选择别家的云服务）, GitHub这里有一个现成的React 组件，[react-recaptcha](https://github.com/appleboy/react-recaptcha)。
 
 首先按安装这个包，
 
@@ -327,22 +347,62 @@ const RecaptchaItem = React.createClass({
 export default RecaptchaItem;
 ```
 
-要使用验证码，客户端需要知道公钥 sitekey, 服务端需要知道 secretkey, 在 Meteor 程序里我们一般把配置信息存放在根目录下的 `settings.json` 中，然后运行 `meteor --setings settings.json` 来启动这个 Web App. 然后在代码中可以访问这些配置，例如上上面的代码中使用了 `sitekey={Meteor.settings.public.siteKey}` 来获取公钥。注意不要把千万 `settings.json` 文件 commit 到git仓库。
+要使用验证码，客户端需要知道公钥 sitekey, 服务端需要知道 secretkey, 在 Meteor 程序里我们一般把配置信息存放在根目录下的 `settings.json` 中，运行是加参数 `meteor --setings settings.json` 来启动这个 Web App. 最后在代码中可以访问这些配置，例如上面的组件使用了 `sitekey={Meteor.settings.public.siteKey}`。注意不要把千万 `settings.json` 文件 commit 到git仓库。
 
-验证码组件写完了，但是还没有结束，需要在服务端来校验验证码，创建一个文件 `imports/api/captcha.js`, 里面只有一个函数`verifyCaptcha()`，具体代码请阅读这个文件。只需要在 `server/main.js`中import 这个文件，因为客户端不需要调用这个函数。
+验证码组件写完了，但是还没有结束，需要在服务端来校验验证码，创建一个文件 `imports/api/captcha.js`, 里面只有一个函数`verifyCaptcha()`，具体代码如下，
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+
+function verifyCaptcha(clientIP, response) {
+  const captcha_data = {
+    secret: Meteor.settings.reCAPTCHASecretKey,
+    remoteip: clientIP,
+    response: response
+  };
+
+  const serialized_captcha_data =
+    'secret=' + captcha_data.secret +
+    '&remoteip=' + captcha_data.remoteip +
+    '&response=' + captcha_data.response;
+  let captchaVerificationResult;
+
+  try {
+    captchaVerificationResult = HTTP.call("POST", "https://www.google.com/recaptcha/api/siteverify", {
+      content: serialized_captcha_data.toString('utf8'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': serialized_captcha_data.length
+      }
+    });
+  } catch (e) {
+    console.log(e);
+    return {
+      'success': false,
+      'error': 'Service Not Available'
+    };
+  }
+
+  if (!captchaVerificationResult || !captchaVerificationResult.content) {
+    return {
+      'success': false,
+      'error': 'Entered Text Does Not Match'
+    };
+  }
+
+  captchaVerificationResult = EJSON.parse(captchaVerificationResult.content);
+  return captchaVerificationResult;
+}
+
+export default verifyCaptcha;
+```
 
 `imports/api/captcha.js` 依赖下面两个包，
 
     meteor add http ejson
 
-创建登录组件，代码见 `imports/ui/components/Login.jsx`，它是一个表单Form, 里面包含了一些字段。注意，`Meteor.loginWithPassword()`只能在客户端调用，不能用在服务端代码中。
 
-创建注册组件，代码见 `imports/ui/components/Signup.jsx`，它也是一个表单Form。
-
-以上两个组件的代码都借鉴了官方的例子 <https://ant.design/components/form/> ，可以两边对照看，方便理解代码。
-
-
-## 登录和注册
+## 注册
 
 接下来我们需要在 Header 的导航栏的中添加两个链接，登录和注册，分别指向`/login`和 `/signup`。当用户成功登录后，需要隐藏登录和注册链接，替换成一个下拉菜单，里面有`我的主页`、`设置`和`退出`等菜单。
 
@@ -367,6 +427,26 @@ FlowRouter.route('/signup', {
   },
 });
 ```
+
+创建注册组件，代码见 `imports/ui/components/Signup.jsx`，它也是一个表单Form。
+
+服务端验证校验码，新建一个文件`imports/startup/server/user-config.js`，并在 `server/main.js` 引入，
+
+```javascript
+import verifyCaptcha from '../../api/captcha.js';
+
+Accounts.onCreateUser(function (options, user) {
+  const verifyCaptchaResponse = verifyCaptcha(this.connection.clientAddress, options.profile.captcha);
+  if (!verifyCaptchaResponse.success) {
+    throw new Meteor.Error('reCAPTCHA validation failed');
+  }
+  return _.extend(user, {...options});
+});
+```
+
+## 登录
+
+创建登录组件，代码见 `imports/ui/components/Login.jsx`，它是一个表单Form, 里面包含了一些字段。注意，`Meteor.loginWithPassword()`只能在客户端调用，不能用在服务端代码中。
 
 有一点需要注意，默认的下拉菜单里的每一项，高度太高了，需要单独给一个样式，在 `Header.less`添加如下一段样式：
 
@@ -403,7 +483,6 @@ FlowRouter.route('/logout', {
 * 运行 `meteor remove accounts-ui`，卸载 `accounts-ui`，因为我们有了自己的登录和注册界面，不再需要这个包了。注意不要卸载 `accounts-password`，这个包负责底层逻辑，是一个login service, 我们依然需要它。
 * 删除 `Todo.jsx` 里的 `AccountsUIWrapper`
 * `git rm imports/ui/components/AccountsUIWrapper.jsx`
-* `git rm imports/startup/accounts-config.js`，并删除 `client/main.jsx`里的一行 `import '../imports/startup/accounts-config.js';`
 
 当前还有一个小问题，当用户“登录”或“注册”成功后，不会自动跳转到登录和注册前的URL，怎么办呢？可以把当前URL保存到Session里，等登录成功后再跳转回来。
 
@@ -428,7 +507,7 @@ else FlowRouter.redirect('/');
 Session.set('previous-url', undefined);
 ```
 
-Meteor 默认登录过期时间是 90 天，太长了，我们把它修改为7天，新建一个文件 `imports/startup/server/accounts-config.js`，内容如下，
+Meteor 默认登录过期时间是 90 天，太长了，我们把它修改为7天，在文件 `imports/startup/both/accounts-config.js`中添加一行配置，
 
 ```javascript
 Accounts.config({
@@ -449,7 +528,7 @@ Accounts.config({
 
 ## 验证邮箱
 
-为了在注册新用户是自动发送验证邮件，在 `imports/startup/server/accounts-config.js` 中添加一行配置即可，
+为了在注册新用户是自动发送验证邮件，在 `imports/startup/both/accounts-config.js` 中添加一行配置即可，
 
 ```javascript
 Accounts.config({
@@ -624,13 +703,24 @@ FlowRouter.route('/reset-password/:token', {
 
 第一步，修改 `Signup.jsx`，添加两个字段，性别`gender`和出生年份`birthday`，在 `handleSubmit()`中调用 `Accounts.createUser()`时，第四个参数设置为 `profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}`，更多细节请阅读该文件。
 
-第二步，新建一个文件 `imports/startup/server/user-config.js`并在 `server/main.js` 引入这个文件，该文件内容如下，
+第二步，修改 `imports/startup/server/user-config.js`，
 
 ```javascript
-Accounts.onCreateUser(function(options, user) {
-  return _.extend(user, {gender: options.profile.gender, birthyear: options.profile.birthyear});
+Accounts.onCreateUser(function (options, user) {
+  const verifyCaptchaResponse = verifyCaptcha(this.connection.clientAddress, options.profile.captcha);
+  if (!verifyCaptchaResponse.success) {
+    throw new Meteor.Error('reCAPTCHA validation failed');
+  }
+  return _.extend(user,
+    { password: options.password,
+      email: options.email,
+      gender: options.profile.gender,
+      birthyear: options.profile.birthyear,
+    }
+  );
 });
 ```
+
 注意，`onCreateUser()`千万不要写成下面这样：
 
 ```javascript
@@ -639,7 +729,7 @@ Accounts.onCreateUser(function(options, user) {
 });
 ```
 
-前面那个`onCreateUser()`是正确的写法，即使客户端在 `profile` 里塞入任意字段，服务端还是只保存`gender`和 `birthyear`，把其他字段丢弃掉。
+因为 Meteor 历史遗留原因，客户端可以`profile` 里写入任意字段，没有配置项可以禁止这一功能，只能在服务端选择需要的字段，把其他字段丢弃掉。
 
 在浏览器里注册一个新用户，然后用 MongoDB Compass 连接上数据库，可以看到新用户多了两个字段 `gender`和 `birthyear`，大功告成！
 
@@ -649,16 +739,19 @@ Accounts.onCreateUser(function(options, user) {
 
 ```javascript
 Meteor.publish(null, function () {
-  return Meteor.users.find({
-    _id: this.userId
-  }, {
-    fields: {
-      birthyear: 1,
-      gender: 1,
-      nickname: 1,
-    }
-  });
-}, { is_auto: true });
+  if (this.userId) {
+    return Meteor.users.find(this.userId,
+      {
+        fields: {
+          birthyear: 1,
+          gender: 1,
+          nickname: 1,
+        }
+      });
+  } else {
+    return this.ready();
+  }
+});
 ```
 
 上面的代码开放了三个字段给客户端，同时，把publish 的名字设置为 `null`，就会变成 autopublish。

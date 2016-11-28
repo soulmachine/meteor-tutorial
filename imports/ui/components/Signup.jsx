@@ -38,30 +38,27 @@ class Signup extends React.Component {
         console.log(err);
       } else {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, (error, success) => {
-          if(error){
-            console.log("Captcha verification failed with error: ", error);
-          } else {
-            if (success) {
-              Accounts.createUser({
-                username: values.username,
-                email: values.email,
-                password: values.password,
-                profile: {gender: values.gender, birthyear: parseInt(values.birthyear)}
-              }, (error) => {
-                if (error) console.log('Signup failed with error: ', error);
-                else {
-                  message.success("注册成功，请查收邮件激活账户", 3);
-                  const previous = Session.get('previous-url');
-                  if (previous) FlowRouter.redirect(Session.get('previous-url'));
-                  else FlowRouter.redirect('/');
-                  Session.set('previous-url', undefined);
-                }
-              });
-            } else {
+        Accounts.createUser({
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          profile: {gender: values.gender, birthyear: parseInt(values.birthyear), captcha: values.captcha}
+        }, (error) => {
+          if (error) {
+            console.log('Signup failed with error: ', error);
+            if (error.message.includes("reCAPTCHA")) {
               console.log("Captcha verification failed");
               this.setState({signupFailed: true, failedReason: "验证码校验失败！"});
+            } else {
+              this.setState({signupFailed: true, failedReason: "注册失败，未知错误！"});
             }
+          }
+          else {
+            message.success("注册成功，请查收邮件激活账户", 3);
+            const previous = Session.get('previous-url');
+            if (previous) FlowRouter.redirect(Session.get('previous-url'));
+            else FlowRouter.redirect('/');
+            Session.set('previous-url', undefined);
           }
         });
       }

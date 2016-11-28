@@ -10,8 +10,6 @@ import Button from 'antd/lib/button';
 import Checkbox from 'antd/lib/checkbox';
 import message from 'antd/lib/message';
 
-import RecaptchaItem from './RecaptchaItem';
-
 const FormItem = Form.Item;
 
 class Login extends React.Component {
@@ -28,25 +26,14 @@ class Login extends React.Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
-        Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
-          if(error){
-            console.log("Captcha verification failed with error: ", error);
-          } else {
-            if (result) {
-              Meteor.loginWithPassword(values.username, values.password, (error) => {
-                if (error) this.setState({loginFailed: true, failedReason: '用户名或密码错误'});
-                else {
-                  message.success("登录成功！", 3);
-                  const previous = Session.get('previous-url');
-                  if (previous) FlowRouter.redirect(Session.get('previous-url'));
-                  else FlowRouter.redirect('/');
-                  Session.set('previous-url', undefined);
-                }
-              });
-            } else {
-              console.log("Captcha verification failed");
-              this.setState({loginFailed: true, failedReason: '验证码错误'});
-            }
+        Meteor.loginWithPassword(values.username, values.password, (error) => {
+          if (error) this.setState({loginFailed: true, failedReason: '用户名或密码错误'});
+          else {
+            message.success("登录成功！", 3);
+            const previous = Session.get('previous-url');
+            if (previous) FlowRouter.redirect(Session.get('previous-url'));
+            else FlowRouter.redirect('/');
+            Session.set('previous-url', undefined);
           }
         });
       }
@@ -81,11 +68,6 @@ class Login extends React.Component {
           })(
             <Input addonBefore={<Icon type="lock" />} type="password" placeholder="密码" />
           )}
-        </FormItem>
-        <FormItem>
-          {getFieldDecorator('captcha', {
-            rules: [{ required: true, message: 'Please input the captcha you got!' }],
-          })(<RecaptchaItem />)}
         </FormItem>
         <FormItem>
           {getFieldDecorator('remember', {

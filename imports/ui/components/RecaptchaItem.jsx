@@ -5,7 +5,6 @@ import { Meteor } from 'meteor/meteor';
 
 const RecaptchaItem = React.createClass({
   verifyCallback(result) {
-    console.log('verifyCallback', result);
     this.props.onChange(result); // 认证通过时，通知到 form
   },
   render() {
