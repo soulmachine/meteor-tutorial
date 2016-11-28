@@ -13,17 +13,20 @@ class Notifications extends React.Component {
     FlowRouter.go("/notifications/" + page);
   }
   clickMessage(id) {
-    console.log(id);
-    Meteor.call('notification.markAsRead', id, (error, result) => {
+    Meteor.call('notifications.markAsRead', id, (error, result) => {
       if(error){
-        console.log("notification.markAsRead failed with error: ", error);
+        console.log("notifications.markAsRead failed with error: ", error);
       } else {
-        console.log("notification.markAsRead succeeded");
+        console.log("notifications.markAsRead succeeded");
       }
     });
   }
   render() {
     console.log(this.props.page);
+    let totalCount = 0;
+    if (this.props.total.length >0) {
+      totalCount = this.props.total[0].count;
+    }
     return (
       <div style={{padding: "0 50px"}}>
         <div style={{borderBottom: "1px solid #CCC", fontSize: 14, fontWeight: "bold", paddingBottom: 10}}>全部消息</div>
@@ -38,7 +41,7 @@ class Notifications extends React.Component {
         <Row style={{marginTop: 20}}>
           <Col span={8} offset={9}>
             <Pagination simple pageSize={Meteor.settings.public.recordsPerPage} current={this.props.page}
-                        onChange={this.onChange.bind(this)} total={this.props.totalCount} />
+                        onChange={this.onChange.bind(this)} total={totalCount} />
           </Col>
         </Row>
       </div>
@@ -50,13 +53,13 @@ export default createContainer(({ page }) => {
   const currentPage = parseInt(page) || 1;
   const skipCount = (currentPage - 1) * Meteor.settings.public.recordsPerPage;
   Meteor.subscribe('notifications', skipCount);
-  Meteor.subscribe('notification-total-count');
+  Meteor.subscribe('notification_total_counters');
 
-  const { Notifications } = require('../../api/notifications.js');
+  const { Notifications, NotificationTotalCounters } = require('../../api/notifications.js');
 
   return {
     page: currentPage,
     notifications: Notifications.find().fetch(),
-    totalCount: Counter.get("notification-total-count"),
+    total: NotificationTotalCounters.find().fetch(),
   };
 }, Notifications);

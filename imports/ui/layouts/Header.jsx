@@ -2,7 +2,8 @@ import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 
-import { Notifications } from '../../api/notifications.js';
+import { NotificationUnreadCounters } from '../../api/notifications.js';
+
 
 import enquire from 'enquire.js';
 
@@ -70,15 +71,19 @@ const SearchInput = React.createClass({
 });
 
 const NotificationBadge = createContainer(() => {
-  Meteor.subscribe('notification-unread-count');
+  Meteor.subscribe('notification_unread_counters');
   return {
-    unreadCount: Counter.get("notification-unread-count"),
+    unread: NotificationUnreadCounters.find().fetch(),
   }
 }, React.createClass({
   render() {
+    let unreadCount = 0;
+    if (this.props.unread.length >0) {
+      unreadCount = this.props.unread[0].count;
+    }
     return (
       <a href="/notifications">
-        <Badge count={this.props.unreadCount}>
+        <Badge count={unreadCount}>
           消息
         </Badge>
       </a>

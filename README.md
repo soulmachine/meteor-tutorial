@@ -1128,23 +1128,109 @@ const ChangePasswordForm = Form.create()(React.createClass({
 
 未读消息数，这个整数需要做成 reactive 的，这样就能实时展示未读消息数。如果调用 `Meteor.methods()` 里面定义的方法，虽然可以得到未读消息数，但这个整数不是 reactive的。
 
-GitHub上已经有一些包，例如[publish-counts](https://github.com/percolatestudio/publish-counts/)和[publish-performant-counts](https://github.com/nate-strauser/meteor-publish-performant-counts/)，可以做这个reactive的计数器。这里我们选择 `publish-performant-counts`，它没有`publish-counts`实时，只是每10秒查询一次服务器，但是性能好，实时性也够用了，
+GitHub上已经有一些包，例如[publish-counts](https://github.com/percolatestudio/publish-counts/)和[publish-performant-counts](https://github.com/nate-strauser/meteor-publish-performant-counts/)，
 
-    meteor add natestrauser:publish-performant-counts
+* `publish-counts`用的是`database observer`机制，非常实时，但是性能低，只能用于小数据集
+* `publish-performant-counts`每10秒查询一次服务器，这个方法性能好，但是实时性不够
+
+对于第三方库而言，并不知道你的数据库里有什么数据，它只能设计的非常通用，所以性能上无法达到极致。这里我们由于需求很简单也很具体，我决定自己撸一个实时计数器，原理很简单，新建一个Collection, 名为 `notification_unread_counters`，里面就是一个键值对，`userId->count`，代码见 `imports/api/notifications.js`，
+
+```javascript
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
+
+export const Notifications = new Mongo.Collection('notifications');
+export const NotificationTotalCounters = new Mongo.Collection('notification_total_counters');
+export const NotificationUnreadCounters = new Mongo.Collection('notification_unread_counters');
+
+if (Meteor.isServer) {
+  Meteor.publish('notifications', function(skipCount) {
+    console.log("skipCount: ", skipCount);
+    return Notifications.find({owner: this.userId},
+      {sort: {createdAt : -1}, skip: skipCount, limit: parseInt(Meteor.settings.public.recordsPerPage)});
+  });
+  Meteor.publish('notification_total_counters', function() {
+    return NotificationTotalCounters.find({owner: this.userId});
+  });
+  Meteor.publish('notification_unread_counters', function() {
+    return NotificationUnreadCounters.find({owner: this.userId});
+  });
+
+  // Initialize counters
+  const allNotifications = Notifications.find({}, {fields: {owner: 1, isRead: 1}}).fetch();
+  const groupBy = {};
+  allNotifications.forEach(function(x, i){
+    if (x.owner in groupBy) groupBy[x.owner].push(x);
+    else groupBy[x.owner] = [x];
+  });
+
+  for (var userId in groupBy) {
+    NotificationTotalCounters.update(
+      { owner: userId },
+      { $set: { owner: userId, count: groupBy[userId].length } },
+      { upsert: true },
+    );
+    NotificationUnreadCounters.update(
+      { owner: userId },
+      { $set: { owner: userId, count: groupBy[userId].filter(function(x) {return x.isRead != true}).length } },
+      { upsert: true },
+    );
+  }
+}
+
+Meteor.methods({
+  'notification.insert'(content) {
+    Notifications.insert({
+      owner: content.owner,
+      sender: content.sender,
+      action: content.action,
+      title: content.title,
+      link: content.link,
+      createdAt: new Date(),
+    });
+
+    NotificationTotalCounters.update(
+      { owner: this.userId },
+      { $inc: { count: 1 } },
+      { upsert: true },
+    );
+    NotificationUnreadCounters.update(
+      { owner: this.userId },
+      { $inc: { count: 1 } },
+      { upsert: true },
+    );
+  },
+  'notifications.markAsRead'(id) {
+    const notification = Notifications.findOne(id);
+    if (notification.owner !== this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    Notifications.update(id, { $set: { isRead: true } });
+    NotificationUnreadCounters.update({owner: this.userId}, { $inc: { count: -1 } });
+  },
+});
+```
+
+自己实现计数器，代价就是自己要维护这些计数器，比如 `notification.insert` 里每次新增一个消息时，要记得给总数和未读数都加1。
 
 在 `Header.jsx` 里声明一个新组件，名字为 `NotificationBadge`，
 
 ```jsx
 const NotificationBadge = createContainer(() => {
-  Meteor.subscribe('notification-unread-count');
+  Meteor.subscribe('notification_unread_counters');
   return {
-    unreadCount: Counter.get("notification-unread-count"),
+    unread: NotificationUnreadCounters.find().fetch(),
   }
 }, React.createClass({
   render() {
+    let unreadCount = 0;
+    if (this.props.unread.length >0) {
+      unreadCount = this.props.unread[0].count;
+    }
     return (
       <a href="/notifications">
-        <Badge count={this.props.unreadCount}>
+        <Badge count={unreadCount}>
           消息
         </Badge>
       </a>
@@ -1153,25 +1239,10 @@ const NotificationBadge = createContainer(() => {
 }));
 ```
 
-这个组件订阅了 `notification-unread-count`，所以我们需要在服务端定发布它，，新建一个文件，`imports/api/notifications.js`并在 `server/main.js`中引入,
-
-```javascript
-import { Meteor } from 'meteor/meteor';
-import { Mongo } from 'meteor/mongo';
-
-export const Notifications = new Mongo.Collection('notifications');
-
-if (Meteor.isServer) {
-  Meteor.publish('notification-unread-count', function() {
-    return new Counter('notification-unread-count', Notifications.find({owner: this.userId, isRead: { $ne: true }}));
-  });
-}
-```
-
 接下来做一个实验，运行命令 `meteor mongo` 启动一个MongoDB Shell, 注意要让浏览器和你的命令行并排摆放，这样你可以同时看见浏览器和命令行。在命令行里面输入如下命令，插入一条数据，
 
 ```javascript
-db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE", action: "评价了你的帖子", title: "深度学习开发环境配置：Ubuntu 16.04+Nvidia GTX 1080+CUDA 8.0", link: "https://zhuanlan.zhihu.com/p/22635699", createdAt: new Date() });
+db.notification_unread_counters.insert({ owner: "XWzQrrj8naBkP9gyE", count: 7 });
 ```
 
 你可以看到浏览器立刻有了变化，右上角的徽标变成了红色，里面有一个数字1，重复插入多条数据，这个整数会实时变化😁
@@ -1196,52 +1267,13 @@ loggedInRoutes.route("/notifications/:page?", {
 });
 ```
 
-`page`参数是用来分页的。随着时间推移，用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。
+`page`参数是用来分页的。随着时间推移，用户的消息会越来越多，当用户点击"查看全部"，肯定需要分页机制，否则数据全部装在到浏览器内存，性能很差。前面的 `imports/api/notifications.js` 已经支持了分页，
 
-在`imports/api/notifications.js` 中添加如下代码，
-
-```javascript
-import { Meteor } from 'meteor/meteor';
-import { Mongo } from 'meteor/mongo';
-
-export const Notifications = new Mongo.Collection('notifications');
-
-if (Meteor.isServer) {
-  Meteor.publish('notifications', function(skipCount) {
-    console.log("skipCount: ", skipCount);
-    return Notifications.find({owner: this.userId},
-      {sort: {createdAt : -1}, skip: skipCount, limit: parseInt(Meteor.settings.public.recordsPerPage)});
-  });
-
-  Meteor.publish('notification-unread-count', function() {
-    return new Counter('notification-unread-count', Notifications.find({owner: this.userId, isRead: { $ne: true }}));
-  });
-  Meteor.publish('notification-total-count', function() {
-    return new Counter('notification-total-count', Notifications.find({owner: this.userId}));
-  });
-}
-
-Meteor.methods({
-  'notification.markAsRead'(id) {
-    const notification = Notifications.findOne(id);
-    if (notification.owner !== this.userId) {
-      // If the task is private, make sure only the owner can delete it
-      throw new Meteor.Error('not-authorized');
-    }
-
-    Notifications.update(id, { $set: { isRead: true } });
-  },
-});
-
-```
-
-主要是增加了3个东西，
-
-1. 发布 `notifications`，便于客户端 subscribe
-1. 发布了一个计数器`notification-total-count`，分页时需要用到
+1. 发布 `notifications` 时，需要传入一个参数 `skipCount`，表示跳过本页之前的所有记录
+1. 发布了一个计数器`notification-total-count`，分页时需要用到这个数
 1. `notification.markAsRead`函数，当用户点击了某个消息，就把它标记为已读
 
-接下来是实现这个组件，`imports/ui/components/Notifications.jsx`,
+逻辑功能已经完备，接下来只需要实现视图层，`imports/ui/components/Notifications.jsx`,
 
 ```jsx
 import React from 'react';
@@ -1259,17 +1291,20 @@ class Notifications extends React.Component {
     FlowRouter.go("/notifications/" + page);
   }
   clickMessage(id) {
-    console.log(id);
-    Meteor.call('notification.markAsRead', id, (error, result) => {
+    Meteor.call('notifications.markAsRead', id, (error, result) => {
       if(error){
-        console.log("notification.markAsRead failed with error: ", error);
+        console.log("notifications.markAsRead failed with error: ", error);
       } else {
-        console.log("notification.markAsRead succeeded");
+        console.log("notifications.markAsRead succeeded");
       }
     });
   }
   render() {
     console.log(this.props.page);
+    let totalCount = 0;
+    if (this.props.total.length >0) {
+      totalCount = this.props.total[0].count;
+    }
     return (
       <div style={{padding: "0 50px"}}>
         <div style={{borderBottom: "1px solid #CCC", fontSize: 14, fontWeight: "bold", paddingBottom: 10}}>全部消息</div>
@@ -1284,7 +1319,7 @@ class Notifications extends React.Component {
         <Row style={{marginTop: 20}}>
           <Col span={8} offset={9}>
             <Pagination simple pageSize={Meteor.settings.public.recordsPerPage} current={this.props.page}
-                        onChange={this.onChange.bind(this)} total={this.props.totalCount} />
+                        onChange={this.onChange.bind(this)} total={totalCount} />
           </Col>
         </Row>
       </div>
@@ -1296,19 +1331,27 @@ export default createContainer(({ page }) => {
   const currentPage = parseInt(page) || 1;
   const skipCount = (currentPage - 1) * Meteor.settings.public.recordsPerPage;
   Meteor.subscribe('notifications', skipCount);
-  Meteor.subscribe('notification-total-count');
+  Meteor.subscribe('notification_total_counters');
 
-  const { Notifications } = require('../../api/notifications.js');
+  const { Notifications, NotificationTotalCounters } = require('../../api/notifications.js');
 
   return {
     page: currentPage,
     notifications: Notifications.find().fetch(),
-    totalCount: Counter.get("notification-total-count"),
+    total: NotificationTotalCounters.find().fetch(),
   };
 }, Notifications);
 ```
 
-上述代码目前还有个问题，当翻页时`console.log()`会打印两边，说明组件渲染了两次，为什么了？ TBD
+启动 `meteor mongo` 插入一条数据，
+
+```javascript
+db.notifications.insert({ owner: "XWzQrrj8naBkP9gyE", sender: "XWzQrrj8naBkP9gyE", action: "评价了你的帖子", title: "深度学习开发环境配置：Ubuntu 16.04+Nvidia GTX 1080+CUDA 8.0", link: "https://zhuanlan.zhihu.com/p/22635699", createdAt: new Date() });
+```
+
+可以看到 `/notifications` 页面立马有了变化。
+
+上述代码目前还有个问题，当翻页时`render()`里面的`console.log()`会打印两次，说明组件渲染了两次，为什么？ TODO
 
 
 # 参考资料：
