@@ -2,7 +2,7 @@ import verifyCaptcha from '../../api/captcha.js';
 
 Accounts.onCreateUser(function (options, user) {
   let ip;
-  if (this.connection == null) {  // for local debug only
+  if (this.connection == null || this.connection.clientAddress == null) {  // for local debug only
     const response = HTTP.call("GET", "http://checkip.dyndns.org");
     const match =  response.content.match(/.*Current IP Address: ([0-9.]+)/i);
     ip = match[1];

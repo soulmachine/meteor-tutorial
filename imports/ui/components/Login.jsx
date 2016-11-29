@@ -10,6 +10,8 @@ import Button from 'antd/lib/button';
 import Checkbox from 'antd/lib/checkbox';
 import message from 'antd/lib/message';
 
+import RecaptchaItem from './RecaptchaItem';
+
 const FormItem = Form.Item;
 
 class Login extends React.Component {
@@ -17,25 +19,64 @@ class Login extends React.Component {
     super(props);
     this.state = {
       loginFailed: false,
+      loginFailedCount: parseInt(localStorage.getItem("login-failed-count")) || 0,
       failedReason: '',
     };
   }
   handleSubmit(e) {
     e.preventDefault();
-    this.setState({loginFailed: false, failedReason: ''});
+    this.setState({loginFailed: false, failedReason: null});
+    console.log("loginFailedCount", this.state.loginFailedCount);
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
-        Meteor.loginWithPassword(values.username, values.password, (error) => {
-          if (error) this.setState({loginFailed: true, failedReason: '用户名或密码错误'});
-          else {
-            message.success("登录成功！", 3);
-            const previous = Session.get('previous-url');
-            if (previous) FlowRouter.redirect(Session.get('previous-url'));
-            else FlowRouter.redirect('/');
-            Session.set('previous-url', undefined);
-          }
-        });
+        if (this.state.loginFailedCount > 5) {
+          Meteor.call('verifyCaptcha', values.captcha, (error, result) => {
+            if (error) {
+              console.log("Captcha verification failed with error: ", error);
+              this.setState({ loginFailed: true, failedReason: '验证码错误' });
+            } else {
+              if (result) {
+                Meteor.loginWithPassword(values.username, values.password, (error) => {
+                  if (error) {
+                    localStorage.setItem("login-failed-count", (this.state.loginFailedCount+1).toString());
+                    this.setState({
+                      loginFailed: true, loginFailedCount: (this.state.loginFailedCount + 1),
+                      failedReason: '用户名或密码错误'
+                    });
+                  } else {
+                    message.success("登录成功！", 3);
+                    localStorage.removeItem("login-failed-count");
+                    const previous = Session.get('previous-url');
+                    if (previous) FlowRouter.redirect(Session.get('previous-url'));
+                    else FlowRouter.redirect('/');
+                    Session.set('previous-url', undefined);
+                  }
+                });
+              } else {
+                console.log("Captcha verification failed");
+                this.setState({ loginFailed: true, failedReason: '验证码错误' });
+              }
+            }
+          });
+        } else {
+          Meteor.loginWithPassword(values.username, values.password, (error) => {
+            if (error) {
+              localStorage.setItem("login-failed-count", (this.state.loginFailedCount+1).toString());
+              this.setState({
+                loginFailed: true, loginFailedCount: (this.state.loginFailedCount + 1),
+                failedReason: '用户名或密码错误'
+              });
+            } else {
+              message.success("登录成功！", 3);
+              localStorage.removeItem("login-failed-count");
+              const previous = Session.get('previous-url');
+              if (previous) FlowRouter.redirect(Session.get('previous-url'));
+              else FlowRouter.redirect('/');
+              Session.set('previous-url', undefined);
+            }
+          });
+        }
       }
     });
   }
@@ -69,6 +110,15 @@ class Login extends React.Component {
             <Input addonBefore={<Icon type="lock" />} type="password" placeholder="密码" />
           )}
         </FormItem>
+        { this.state.loginFailedCount > 5 ?
+          <FormItem>
+            {getFieldDecorator('captcha', {
+              rules: [{required: true, message: 'Please input the captcha you got!'}],
+            })(<RecaptchaItem />)}
+          </FormItem>
+          :
+          null
+        }
         <FormItem>
           {getFieldDecorator('remember', {
             valuePropName: 'checked',

@@ -26,19 +26,22 @@ class ForgotPassword extends React.Component {
   }
 
   emailExists(rule, value, callback) {
-    console.log('email: ', value);
-    Meteor.call('emailExists', value, (error, result) => {
-      if (error) {
-        console.log('There is an error while checking email');
-        callback();
-      } else {
-        if (result) {
+    if (value) {
+      Meteor.call('emailExists', value, (error, result) => {
+        if (error) {
+          console.log('There is an error while checking email');
           callback();
         } else {
-          callback('该E-mail不存在');
+          if (result) {
+            callback();
+          } else {
+            callback('该E-mail不存在');
+          }
         }
-      }
-    });
+      });
+    } else {
+      callback();
+    }
   }
   handleSubmit(e) {
     e.preventDefault();

@@ -41,3 +41,13 @@ function verifyCaptcha(clientIP, response) {
 }
 
 export default verifyCaptcha;
+
+Meteor.methods({
+  "verifyCaptcha": function(response) {
+    var verifyCaptchaResponse = verifyCaptcha(this.connection.clientAddress, response);
+    if (!verifyCaptchaResponse.success) {
+      console.log('Captcha verification failed! Responding with: ', verifyCaptchaResponse);
+    }
+    return verifyCaptchaResponse.success;
+  },
+});

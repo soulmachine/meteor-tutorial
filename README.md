@@ -517,6 +517,9 @@ Accounts.config({
 ```
 并在`server/main.js`中引入。
 
+接着来一个小改进，如何只在用户密码错误次数超过5次之后，才显示验证码？ 在状态里新增一个字段，`loginFailedCount: parseInt(localStorage.getItem("login-failed-count"))`，初始值来自 localStorage，每次密码错误就增一，当超过5次之后，就显示注册码；只要登录成功，就删除localStorage里的键值对。
+
+
 （可选）为了调试方便，我们可以安装这个包，<https://github.com/msavin/Mongol>, 这个包可以查看客户端数据库 minimongo 里的所有 Collection。
 
     meteor add msavin:mongol
