@@ -2,10 +2,8 @@ import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 
-import { NotificationUnreadCounters } from '../../api/notifications.js';
-
-
 import enquire from 'enquire.js';
+import classNames from 'classnames';
 
 import 'antd/dist/antd.css';
 import Badge from 'antd/lib/badge';
@@ -13,62 +11,14 @@ import Menu from 'antd/lib/menu';
 import Row from 'antd/lib/row';
 import Col from 'antd/lib/col';
 import Icon from 'antd/lib/icon';
-import Button from 'antd/lib/button';
 import Popover from 'antd/lib/popover';
 import Input from 'antd/lib/input';
 
+import { NotificationUnreadCounters } from '../../api/notifications.js';
 
-import classNames from 'classnames';
-const InputGroup = Input.Group;
+const Search = Input.Search;
 const SubMenu = Menu.SubMenu;
 
-// See https://github.com/ant-design/ant-design/blob/master/components/input/demo/search-input.md
-const SearchInput = React.createClass({
-  getInitialState() {
-    return {
-      value: '',
-      focus: false,
-    };
-  },
-  handleInputChange(e) {
-    this.setState({
-      value: e.target.value,
-    });
-  },
-  handleFocusBlur(e) {
-    this.setState({
-      focus: e.target === document.activeElement,
-    });
-  },
-  handleSearch() {
-    if (this.props.onSearch) {
-      this.props.onSearch(this.state.value);
-    }
-  },
-  render() {
-    const { style, size, placeholder } = this.props;
-    const btnCls = classNames({
-      'ant-search-btn': true,
-      'ant-search-btn-noempty': !!this.state.value.trim(),
-    });
-    const searchCls = classNames({
-      'ant-search-input': true,
-      'ant-search-input-focus': this.state.focus,
-    });
-    return (
-      <div className="ant-search-input-wrapper" style={style}>
-        <InputGroup className={searchCls}>
-          <Input placeholder={placeholder} value={this.state.value} onChange={this.handleInputChange}
-                 onFocus={this.handleFocusBlur} onBlur={this.handleFocusBlur} onPressEnter={this.handleSearch}
-          />
-          <div className="ant-input-group-wrap">
-            <Button icon="search" className={btnCls} size={size} onClick={this.handleSearch} />
-          </div>
-        </InputGroup>
-      </div>
-    );
-  },
-});
 
 const NotificationBadge = createContainer(() => {
   Meteor.subscribe('notification_unread_counters');
@@ -190,9 +140,8 @@ class Header extends React.Component {
           </Col>
           <Col lg={20} md={18} sm={17} xs={0} style={{ display: 'block' }}>
             <div id="search-box">
-              <SearchInput placeholder="搜索你感兴趣的内容..."
-                           onSearch={value => console.log(value)} style={{ width: 300 }}
-              />
+              <Search placeholder="搜索你感兴趣的内容..."
+                      onSearch={value => console.log(value)} style={{ width: 300 }} />
             </div>
             {this.state.menuMode === 'horizontal' ? menu : null}
           </Col>

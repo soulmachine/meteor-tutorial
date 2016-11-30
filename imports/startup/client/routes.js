@@ -24,7 +24,7 @@ const loggedInRoutes = FlowRouter.group({
   }]
 });
 
-FlowRouter.route("/", {
+loggedInRoutes.route("/", {
   action() {
     mount(MainLayout, {
       children: (<Welcome />)
