@@ -22,27 +22,31 @@ Table of Contents
 
 # Step1: 新建一个工程
 
-现在 github 网页上新建一个 private 项目 `meteor-tutorial`，然后 clone 到本地
-
-    git@github.com:soulmachine/meteor-tutorial.git
-    mv meteor-tutorial tmp-meteor-tutorial
+先在本地新建一个Meteor项目，
 
     meteor create meteor-tutorial
-    mv tmp-meteor-tutorial/* meteor-tutorial/
-    mv tmp-meteor-tutorial/.git/ meteor-tutorial/
-    mv tmp-meteor-tutorial/.gitignore meteor-tutorial/
-    rm -rf tmp-meteor-tutorial
     cd meteor-tutorial
     meteor npm install
-    meteor
 
-    git config user.name soulmachine
-    git config user.email soulmachine@gmail.com
-    git config github.user soulmachine
-    git add *
-    git add .meteor/
+新建`README.md`文件，
+
+    echo "# test" >> README.md
+
+将本地目录初始化为一个 git repo,
+
+    git init
+
+添加文件到这个 git repo,
+
+    git add .
     git commit -m "Step1: 新建一个工程"
-    git push origin master
+
+然后在 GitHub 网页上新建一个空的项目 `meteor-tutorial`，不要有 `.gitignore` 、`LICENSE`和 `README.md` 文件，即新建一个完全是空的项目。
+
+将本地 repo push 到远程repo,
+
+    git remote add origin git@github.com:soulmachine/meteor-tutorial.git
+    git push -u origin master
 
 
 # Step2: 添加React支持
@@ -274,6 +278,13 @@ import '../imports/startup/client/routes.js';
 # Step6: 注册和登录
 
 `accounts-ui`自带简单的界面，虽然在快速开发原型时很有用，但是最终你还是需要自己定制登录和注册界面，下面我们开始一步一步制作登录和注册界面。
+
+用密码登录的话，我们需要`accounts-password`这个包，为了安全，我们需要移除`insecure`和`autopublish`，同时密码用bcrypt加密方式，
+
+    meteor remove insecure
+    meteor remove autopublish
+    meteor npm install --save bcrypt
+    meteor add  accounts-password
 
 * 注册，基本流程是，在客户端，通过表单填写各项数据，然后在客户端调用 `Accounts.createUser()`发起注册请求，最后在服务端通过 `Accounts.onCreateUser()`校验各项数据。
 * 登录，基本流程是，在客户端，通过表单填写用户名和密码，然后再客户端调用`Meteor.loginWithPassword()`发起登录请求，最后在服务端通过 `Accounts.validateLoginAttempt()`校验
